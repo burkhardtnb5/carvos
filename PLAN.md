@@ -9,15 +9,16 @@ Erledigte Punkte abhaken.
 - [x] Umstellung von Python auf C++, ARM-Build auf dem PC im Container
 - [x] Hell-/Dunkelmodus
 - [x] Bootmeldungen und Regenbogenbild ausblenden
-- [ ] Startzeit verkürzen (Oberfläche wartet unnötig aufs Netz, cloud-init abschalten)
+- [ ] Später: Startzeit verkürzen (Oberfläche wartet unnötig aufs Netz, cloud-init abschalten)
+- [ ] Später: eigenes Logo beim Start
 - [ ] Projekt in Qt Design Studio öffnen und testen
 - [x] Automatischer Start auf dem Pi mit eglfs (`provisioning/setup-kiosk.sh`)
 - [x] Auf dem echten Display prüfen (Darstellung, Touch)
 
 ## Phase 0 – Einrichtung
-- [ ] git auf dem PC installieren, GitHub-Repo (privat) anlegen, pushen
+- [x] git auf dem PC installieren, GitHub-Repo (privat) einrichten, pushen
+- [x] Build-Werkzeuge auf dem PC (CMake, Qt, Podman)
 - [ ] SSH-Key vom PC auf dem Pi hinterlegen
-- [ ] Claude Code auf dem Pi installieren und anmelden, Repo auf dem Pi klonen
 
 ## Phase 1 – Risiken prüfen
 - [ ] hostapd-AP auf `wlan0` des Pi 4 (Testnetz, WPA2)
@@ -28,8 +29,9 @@ Erledigte Punkte abhaken.
 - [ ] Mosquitto einrichten, Topic-Schema umsetzen
 - [ ] carvosd: Zustände sammeln, Online-Status, SQLite-Verlauf
 - [ ] carvos-ui: Anzeige der Gasflaschenwaage (PC im Fenster, Pi mit eglfs)
+- [ ] Firmware-Build auf dem Dev-PC einrichten (ohne Abhängigkeit von diesem Rechner)
 - [ ] Firmware Gasflaschenwaage auf neues Topic-Schema umstellen
-- [ ] systemd-Units für Daemon und UI
+- [ ] systemd-Unit für carvosd (die der Oberfläche gibt es schon)
 
 ## Phase 3 – Netzwerk und Pairing
 - [ ] Erststart: UUID, SSID, Passwort erzeugen und unter `/data` ablegen
@@ -38,9 +40,12 @@ Erledigte Punkte abhaken.
 
 ## Phase 4 – Service-Modus und Updates
 - [ ] Service-Modus (WLAN-Suche, Bildschirmtastatur, Captive-Portal-Hinweis, Timeout)
-- [ ] Release-Updates mit Signatur, Symlink-Umschaltung, Health-Check, Rollback
+- [ ] Repo öffentlich machen (vorher Historie auf Secrets prüfen)
+- [ ] Release-Paket auf dem Dev-PC bauen und signieren, auf GitHub veröffentlichen
+- [ ] Selbst-Update des Hubs: Download im Service-Modus, Signatur, Symlink-Umschaltung, Health-Check, Rollback
 
 ## Phase 5 – Fahrzeugtauglich machen
+- [ ] Standardbenutzer `carvos` ohne `sudo` anlegen, Dienste darunter laufen lassen
 - [ ] Overlay-FS + `/data`-Partition
 - [ ] RTC DS3231
 - [ ] Stromversorgung 12→5 V
@@ -48,3 +53,7 @@ Erledigte Punkte abhaken.
 ## Phase 6 – Zero 2W und Verteilung
 - [ ] Kompletten Stack auf der Zero 2W testen (RAM, Reichweite)
 - [ ] Image mit `rpi-image-gen`/`pi-gen` bauen
+
+## Ferne Zukunft
+- [ ] Node-Updates über den Hub
+- [ ] Systempakete im signierten Release (siehe `docs/ARCHITEKTUR.md`)

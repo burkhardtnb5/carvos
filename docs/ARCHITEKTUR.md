@@ -47,6 +47,8 @@ Bestehende Nodes:
   ein Image. 32 Bit nur, falls die Zero nachweislich zu wenig RAM hat.
 - Pakete aus `apt` statt `pip` (Qt 6.8, mosquitto 2.0).
 - Dienste als systemd-Units, kein Docker.
+- Benutzer: Dienste laufen künftig unter dem Standardbenutzer `carvos` ohne `sudo`.
+  Derzeit läuft die Oberfläche noch als `noah` (Testgerät, in der `sudo`-Gruppe).
 - Root-Dateisystem schreibgeschützt (Overlay-FS). Schreibbare Daten unter `/data`
   (eigene Partition): Konfiguration, SQLite, Releases.
 - Netzwerk-Schnittstellen:
@@ -150,6 +152,22 @@ der Firma in der UI, da das System auch weitergegeben wird.
 Nodes verlieren währenddessen die Verbindung und verbinden sich danach selbst neu
 (Reconnect mit wachsender Wartezeit in der Firmware).
 
+## Build und Auslieferung
+
+```
+Dev-PC ── baut Binärdateien für Hub und Nodes
+   └─► Release im öffentlichen GitHub-Repo
+          └─► Hub lädt es im Service-Modus und aktualisiert sich selbst
+```
+
+- Gebaut wird nur auf dem Dev-PC, nie auf dem Hub. Auf dem Hub liegen weder Repo noch
+  Compiler und auch kein Claude Code.
+- Der Dev-PC ist austauschbar. Der Build darf deshalb nichts von diesem Rechner voraussetzen:
+  Binärdateien entstehen im Container (`ci/`), die nötigen Pakete stehen in `CLAUDE.md`.
+- Die Node-Firmware wird ebenfalls auf dem Dev-PC gebaut und bis auf Weiteres per USB geflasht.
+- Binärdateien nutzen die Qt-Bibliotheken des Betriebssystems. Braucht ein Release andere
+  Systempakete, kommt das als neues SD-Image, nicht über das normale Update.
+
 ## Updates des Hubs
 
 Kein `git pull` auf dem Gerät. Stattdessen:
@@ -162,11 +180,29 @@ Kein `git pull` auf dem Gerät. Stattdessen:
    sonst automatisch zurück zur vorigen Version.
 5. Die letzten 2–3 Versionen behalten.
 
-Das Repo soll spätestens dafür öffentlich werden, sonst bräuchte jeder Hub Zugangsdaten
-zum Laden der Releases.
+Das Repo wird dafür öffentlich, sonst bräuchte jeder Hub Zugangsdaten zum Laden der Releases.
 
 Betriebssystem-Updates (Qt, Debian) selten und als neues SD-Image.
-Update der Node-Firmware über den Hub: **vorerst nicht geplant**.
+Update der Node-Firmware über den Hub: langfristig geplant, aber erst in ferner Zukunft.
+Das Release-Format soll Firmware später aufnehmen können, ohne dass sich das Verfahren ändert.
+
+### Idee für die ferne Zukunft: Systempakete im Release
+
+Bis dahin gilt: Neue Systempakete kommen mit einem neuen SD-Image. Später könnte das signierte
+Release auch `.deb`-Pakete mitbringen:
+
+- Der Dev-PC packt Pakete samt Abhängigkeiten ins Release. Die Signatur deckt jede Datei ab, und
+  alle Hubs bekommen genau den getesteten Stand. Kein Live-`apt` auf dem Hub: Dort können getestete
+  Versionen aus den Quellen verschwinden, und bei falscher Uhr kann `apt` Quellen ablehnen.
+- Ein eigener Root-Dienst `carvos-updater` prüft die Signatur und installiert. Die UI stößt ihn nur an.
+- Das Manifest erlaubt nur konkrete Pakete mit fester Version, keine beliebigen Befehle, kein
+  `apt upgrade` und keine Downgrades.
+- Die Installation muss das Overlay umgehen, sonst ist sie nach dem Neustart weg (Weg noch offen,
+  z. B. eigener Wartungsstart). `apt` braucht auf dem Pi 4 bis zu 148 MB RAM, auf der Zero ungetestet.
+- Risiken: Pakete führen Skripte als root aus, der Signaturschlüssel bedeutet damit root auf allen
+  Hubs und gehört offline. Es gibt kein zuverlässiges Zurückrollen, und ein Stromausfall kann eine
+  Neuinstallation der SD-Karte erfordern. Wirklich abgesichert wäre das erst mit A/B-Systempartitionen.
+- Größere Sprünge (neues Debian, neues Qt) bleiben ein Fall für ein neues Image.
 
 ## Verteilung an Freunde
 
@@ -180,5 +216,4 @@ von Hand ausgeführt werden.
 - Maximale Anzahl Nodes im AP-Modus (Pi 4 und Zero 2W)
 - WLAN-Reichweite im Fahrzeug (Gaskasten, Unterboden)
 - RAM-Verbrauch des gesamten Stacks auf der Zero 2W
-- Touch-Ausrichtung und Darstellung der Oberfläche unter eglfs
 - Bearbeitung des Projekts in Qt Design Studio (noch nicht getestet)

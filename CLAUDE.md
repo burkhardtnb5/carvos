@@ -21,10 +21,20 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 
 ## Maschinen
 
-- **Entwicklungs-PC** (Ubuntu 26.04, x86_64): Hauptentwicklung, UI läuft im Fenster.
+- **Dev-PC** (derzeit Ubuntu 26.04, x86_64, wird später wohl gewechselt): Hauptentwicklung und
+  einziger Ort, an dem gebaut wird, für Hub und Nodes. Nichts darf von genau diesem Rechner abhängen.
+  Nötige Pakete: `build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev
+  qt6-declarative-dev-tools qml6-module-qtcore podman`, für das Screenshot-Werkzeug zusätzlich PySide6.
 - **Raspberry Pi 4** (`noah@192.168.1.111`, Raspberry Pi OS Lite 64 Bit, Trixie):
   Testgerät. `eth0` = Entwicklung/Internet, `wlan0` = Access Point des Hubs.
   Beim Umkonfigurieren von `wlan0` niemals `eth0` anfassen, sonst ist der Pi weg.
+  - Oberfläche: Binärdatei `/opt/carvos/bin/carvos-ui`, gestartet von `carvos-ui.service`
+    mit eglfs, ohne Desktop (`provisioning/setup-kiosk.sh`).
+  - Boot ohne Regenbogenbild und Meldungen (`provisioning/setup-quiet-boot.sh`, Originale
+    als `.orig` in `/boot/firmware`). Fehler stehen nicht auf dem Display, sondern in `journalctl -b`.
+  - Der Pi hat kein Repo: In der Entwicklung bekommt er die Binärdatei und `provisioning/`
+    per SSH vom Dev-PC. Später aktualisiert sich der Hub selbst aus den Releases.
+    In der aktuellen Wohnung ist GitHub von ihm aus gesperrt, SSH vom PC geht.
 - Später: Raspberry Pi Zero 2W als günstiges Zielgerät (512 MB RAM – sparsam bleiben).
 
 ## Regeln
@@ -32,11 +42,11 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 - Einrichtungsschritte am Pi immer als Skript in `provisioning/` festhalten und von
   dort ausführen, nie nur von Hand. Die Skripte müssen mehrfach ausführbar sein
   (idempotent), denn daraus wird später das Image für weitere Hubs gebaut.
-- Pakete aus `apt` statt `pip`. Kein Docker.
+- Auf dem Gerät: Pakete aus `apt` statt `pip`, kein Docker. Gebaut wird am PC mit Podman.
 - UI enthält keine Systemlogik; alles Systemnahe gehört in den carvosd.
 - Sprache in Doku und Commits: Deutsch.
-- Vor dem Arbeiten `git pull`, danach committen und pushen – PC und Pi arbeiten
-  am selben Repo.
+- Vor dem Arbeiten `git pull`. Committen und pushen erst nach Freigabe durch den Nutzer,
+  meist nachdem er den Stand auf dem echten Display getestet hat.
 
 ## Oberfläche (`ui/`)
 
