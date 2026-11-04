@@ -3,6 +3,13 @@
 Reihenfolge so gewählt, dass die größten Risiken früh geprüft werden.
 Erledigte Punkte abhaken.
 
+## Oberfläche (vorgezogen)
+- [x] Grundgerüst mit vier Seiten: Übersicht, Gas, Grauwasser, System (feste Beispielwerte)
+- [x] Automatisches Neuladen und Screenshot-Werkzeug
+- [ ] Projekt in Qt Design Studio öffnen und testen
+- [x] Automatischer Start auf dem Pi mit eglfs (`provisioning/setup-kiosk.sh`)
+- [x] Auf dem echten Display prüfen (Darstellung, Touch)
+
 ## Phase 0 – Einrichtung
 - [ ] git auf dem PC installieren, GitHub-Repo (privat) anlegen, pushen
 - [ ] SSH-Key vom PC auf dem Pi hinterlegen
@@ -13,7 +20,6 @@ Erledigte Punkte abhaken.
 - [ ] hostapd-AP auf `wlan0` des Pi 4 (Testnetz, WPA2)
 - [ ] WPS-PBC mit einem ESP8266 testen (`hostapd_cli wps_pbc` + `WiFi.beginWPSConfig()`)
 - [ ] Mehrere ESPs gleichzeitig verbinden (Grenze des AP-Modus)
-- [ ] QML-Testoberfläche mit eglfs auf dem Display (Touch, Ausrichtung)
 
 ## Phase 2 – Grundgerüst
 - [ ] Mosquitto einrichten, Topic-Schema umsetzen

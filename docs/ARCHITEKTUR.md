@@ -38,6 +38,8 @@ Bestehende Nodes:
 - Stromversorgung: 12→5-V-Wandler, mind. 3 A (Pi 4 + Display).
 - RTC-Modul DS3231: ohne Internet gibt es keine Uhrzeit (wichtig für Verläufe).
 - Nodes: bestehende ESP8266 bleiben. Für neue Nodes ESP32-C3 erwägen.
+- Display: Hamtysan HCIK101V.CC, 10,1", 1024x600 (am Pi ausgelesen), HDMI,
+  Touch per USB (`wch.cn USB2IIC_CTP_CONTROL`).
 
 ## Betriebssystem und Unterbau
 
@@ -107,6 +109,9 @@ Bestehende Nodes:
   - Auf dem PC: normales Fenster zum Entwickeln.
   - Falls die Zero zu langsam ist: Logik nach C++ verschieben, QML bleibt.
 - MQTT-Bibliothek: paho-mqtt (nicht QtMqtt – nur GPL).
+- Gestaltung grafisch mit Qt Design Studio, Community Edition (`ui/carvos.qmlproject`):
+  Aussehen in `*.ui.qml`, Logik getrennt davon. Start weiter über `ui/main.py`, nicht über
+  den Python-Export von Design Studio. Zielversion Qt 6.8, keine Studio-eigenen Komponenten.
 - Bildschirmtastatur: eigene QML-Tastatur oder Qt Virtual Keyboard (GPL).
 - Später: Web-Oberfläche fürs Handy über MQTT-over-WebSockets.
 
@@ -116,8 +121,8 @@ Angelehnt an das Wohnmobil der Familie (Marke Challenger): **Grau als Hauptfarbe
 Rot als Akzent**. Nur das Farbschema übernehmen – kein Logo und keine Markennamen
 der Firma in der UI, da das System auch weitergegeben wird.
 
-- Farben zentral als Tokens in einem QML-Singleton (`Theme.qml`) definieren,
-  nie direkt im Code. Konkrete Werte beim Bau der UI am echten Display festlegen.
+- Farben zentral als Tokens im QML-Singleton `ui/imports/Carvos/Theme.qml`,
+  nie direkt im Code. Werte noch am echten Display prüfen.
 - Dunkles Grau als Standard-Hintergrund: blendet nachts im Wohnmobil nicht.
 - **Rot-Konflikt:** Rot ist Akzentfarbe *und* übliche Alarmfarbe. Deshalb:
   - Akzent-Rot sparsam einsetzen (aktive Elemente, Auswahl, Schriftzug).
@@ -150,6 +155,9 @@ Kein `git pull` auf dem Gerät. Stattdessen:
    sonst automatisch zurück zur vorigen Version.
 5. Die letzten 2–3 Versionen behalten.
 
+Das Repo soll spätestens dafür öffentlich werden, sonst bräuchte jeder Hub Zugangsdaten
+zum Laden der Releases.
+
 Betriebssystem-Updates (Qt, Debian) selten und als neues SD-Image.
 Update der Node-Firmware über den Hub: **vorerst nicht geplant**.
 
@@ -165,4 +173,5 @@ von Hand ausgeführt werden.
 - Maximale Anzahl Nodes im AP-Modus (Pi 4 und Zero 2W)
 - WLAN-Reichweite im Fahrzeug (Gaskasten, Unterboden)
 - RAM-Verbrauch des gesamten Stacks auf der Zero 2W
-- Display-Modell und Touch-Ausrichtung unter eglfs
+- Touch-Ausrichtung und Darstellung der Oberfläche unter eglfs
+- Bearbeitung des Projekts in Qt Design Studio (noch nicht getestet)

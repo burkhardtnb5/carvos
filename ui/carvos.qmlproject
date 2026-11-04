@@ -1,0 +1,34 @@
+import QmlProject
+
+Project {
+    mainFile: "content/App.qml"
+    mainUiFile: "content/Shell.ui.qml"
+
+    QmlFiles { directory: "content" }
+    QmlFiles { directory: "imports" }
+    JavaScriptFiles { directory: "content" }
+    JavaScriptFiles { directory: "imports" }
+    ImageFiles { directory: "content" }
+
+    Files {
+        filter: "*.conf"
+        files: ["qtquickcontrols2.conf"]
+    }
+    Files {
+        filter: "qmldir"
+        directory: "."
+    }
+    Files {
+        filter: "*.ttf;*.otf"
+    }
+
+    Environment {
+        QT_QUICK_CONTROLS_CONF: "qtquickcontrols2.conf"
+        QT_ENABLE_HIGHDPI_SCALING: "0"
+    }
+
+    importPaths: [ "imports" ]
+    qt6Project: true
+    quickVersion: "6.8"
+    primaryLanguage: "de"
+}

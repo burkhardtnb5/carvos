@@ -36,3 +36,16 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 - Sprache in Doku und Commits: Deutsch.
 - Vor dem Arbeiten `git pull`, danach committen und pushen – PC und Pi arbeiten
   am selben Repo.
+
+## Oberfläche (`ui/`)
+
+- Starten mit automatischem Neuladen: `python3 ui/main.py --dev`
+- Auf den Pi kopieren und neu starten: `provisioning/deploy-ui.sh`
+- Bilder aller Seiten ohne Fenster: `ui/tools/screenshot.py ZIELORDNER [BREITExHÖHE]`
+- Qt Quick (QML) mit PySide6. Der Pi hat nur Qt 6.8, der PC 6.10: keine neueren Funktionen als 6.8 nutzen.
+- Das Projekt muss in Qt Design Studio bearbeitbar bleiben (`ui/carvos.qmlproject`):
+  - Aussehen in `*.ui.qml`: keine Funktionen und keine `on...`-Handler. Bedienelemente per `property alias` nach außen geben.
+  - Logik in `content/App.qml` bzw. später in Python.
+  - Keine `QtQuick.Studio.*`-Komponenten, die gibt es auf dem Pi nicht.
+- Farben, Größen und Schriften nur über `Theme`, Symbole über `Icons`. Eigenschaften nicht mit `on` + Großbuchstabe benennen (QML hält sie für Signal-Handler).
+- Referenzgröße ist das echte Display: 1024x600. Änderungen zusätzlich mit 1280x800 prüfen.
