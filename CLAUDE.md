@@ -12,8 +12,9 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 
 ## Repo-Struktur
 
-- `hub/` – carvosd (Python): Logik, Pairing, Alarme, SQLite, Service-Modus, Updates
-- `ui/` – Touch-Oberfläche (Qt 6 QML + PySide6)
+- `hub/` – carvosd (C++): Logik, Pairing, Alarme, SQLite, Service-Modus, Updates
+- `ui/` – Touch-Oberfläche (Qt 6 QML + C++)
+- `ci/` – Build für den Pi im Podman-Container
 - `provisioning/` – Skripte zur Einrichtung des Pi (Pakete, hostapd, mosquitto, systemd)
 - `firmware/` – Arduino-Firmware der ESP-Nodes
 - `docs/` – Dokumentation
@@ -39,13 +40,15 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 
 ## Oberfläche (`ui/`)
 
-- Starten mit automatischem Neuladen: `python3 ui/main.py --dev`
+- Am PC bauen: `cmake -S . -B build/pc -G Ninja && cmake --build build/pc`
+- Starten mit automatischem Neuladen: `build/pc/ui/carvos-ui --dev ui`
+- Für den Pi bauen (kompiliert immer auf dem PC, nie auf dem Pi): `ci/build-arm64.sh`
 - Auf den Pi kopieren und neu starten: `provisioning/deploy-ui.sh`
 - Bilder aller Seiten ohne Fenster: `ui/tools/screenshot.py ZIELORDNER [BREITExHÖHE]`
-- Qt Quick (QML) mit PySide6. Der Pi hat nur Qt 6.8, der PC 6.10: keine neueren Funktionen als 6.8 nutzen.
+- Qt Quick (QML) mit C++. Neue QML-Dateien auch in der passenden `CMakeLists.txt` eintragen (und in `imports/Carvos/qmldir`). Der Pi hat nur Qt 6.8, der PC 6.10: keine neueren Funktionen als 6.8 nutzen.
 - Das Projekt muss in Qt Design Studio bearbeitbar bleiben (`ui/carvos.qmlproject`):
   - Aussehen in `*.ui.qml`: keine Funktionen und keine `on...`-Handler. Bedienelemente per `property alias` nach außen geben.
-  - Logik in `content/App.qml` bzw. später in Python.
+  - Logik in `content/App.qml` bzw. später in C++.
   - Keine `QtQuick.Studio.*`-Komponenten, die gibt es auf dem Pi nicht.
 - Farben, Größen und Schriften nur über `Theme`, Symbole über `Icons`. Eigenschaften nicht mit `on` + Großbuchstabe benennen (QML hält sie für Signal-Handler).
 - Referenzgröße ist das echte Display: 1024x600. Änderungen zusätzlich mit 1280x800 prüfen.

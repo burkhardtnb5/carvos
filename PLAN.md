@@ -6,6 +6,10 @@ Erledigte Punkte abhaken.
 ## Oberfläche (vorgezogen)
 - [x] Grundgerüst mit vier Seiten: Übersicht, Gas, Grauwasser, System (feste Beispielwerte)
 - [x] Automatisches Neuladen und Screenshot-Werkzeug
+- [x] Umstellung von Python auf C++, ARM-Build auf dem PC im Container
+- [x] Hell-/Dunkelmodus
+- [x] Bootmeldungen und Regenbogenbild ausblenden
+- [ ] Startzeit verkürzen (Oberfläche wartet unnötig aufs Netz, cloud-init abschalten)
 - [ ] Projekt in Qt Design Studio öffnen und testen
 - [x] Automatischer Start auf dem Pi mit eglfs (`provisioning/setup-kiosk.sh`)
 - [x] Auf dem echten Display prüfen (Darstellung, Touch)
@@ -14,7 +18,6 @@ Erledigte Punkte abhaken.
 - [ ] git auf dem PC installieren, GitHub-Repo (privat) anlegen, pushen
 - [ ] SSH-Key vom PC auf dem Pi hinterlegen
 - [ ] Claude Code auf dem Pi installieren und anmelden, Repo auf dem Pi klonen
-- [ ] Qt 6 / PySide6 auf PC und Pi installieren (`provisioning/`-Skript)
 
 ## Phase 1 – Risiken prüfen
 - [ ] hostapd-AP auf `wlan0` des Pi 4 (Testnetz, WPA2)

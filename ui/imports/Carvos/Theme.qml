@@ -3,23 +3,26 @@ import QtQuick
 
 // Alle Farben, Größen und Schriften an einer Stelle.
 QtObject {
+    // Wird von App.qml aus den gespeicherten Einstellungen gesetzt.
+    property bool dark: true
+
     // Grautöne (Hauptfarbe)
-    readonly property color background: "#17191C"
-    readonly property color surface: "#25282C"
-    readonly property color surfaceRaised: "#32363B"
-    readonly property color border: "#3D4248"
-    readonly property color track: "#464B52"
-    readonly property color text: "#F1F3F5"
-    readonly property color textMuted: "#A9AFB6"
+    readonly property color background: dark ? "#17191C" : "#D5D8DC"
+    readonly property color surface: dark ? "#25282C" : "#F1F2F4"
+    readonly property color surfaceRaised: dark ? "#32363B" : "#E1E3E6"
+    readonly property color border: dark ? "#3D4248" : "#BFC3C8"
+    readonly property color track: dark ? "#464B52" : "#C2C6CB"
+    readonly property color text: dark ? "#F1F3F5" : "#1B1D20"
+    readonly property color textMuted: dark ? "#A9AFB6" : "#555B62"
 
     // Rot (Akzent): sparsam einsetzen, siehe docs/ARCHITEKTUR.md
-    readonly property color accent: "#D92D32"
-    readonly property color accentPressed: "#AE2227"
+    readonly property color accent: dark ? "#D92D32" : "#C4252A"
+    readonly property color accentPressed: dark ? "#AE2227" : "#9C1C20"
     readonly property color textOnAccent: "#FFFFFF"
 
     // Zustände
-    readonly property color warning: "#F2A93B"
-    readonly property color success: "#4FB286"
+    readonly property color warning: dark ? "#F2A93B" : "#9A5B00"
+    readonly property color success: dark ? "#4FB286" : "#1B7A50"
 
     // Maße für 1024x600 auf 10,1": 56 Pixel sind etwa 12 mm Touchfläche
     readonly property int touchMin: 56

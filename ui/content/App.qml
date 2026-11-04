@@ -1,3 +1,4 @@
+import QtCore
 import QtQuick
 import QtQuick.Controls.Basic
 import Carvos
@@ -7,12 +8,25 @@ ApplicationWindow {
     id: window
 
     property alias currentPage: shell.currentPage
+    property alias darkMode: settings.darkMode
 
     width: 1024
     height: 600
     visible: true
     title: "CARVOS"
     color: Theme.background
+
+    Settings {
+        id: settings
+        category: "ui"
+        property bool darkMode: true
+    }
+
+    Binding {
+        target: Theme
+        property: "dark"
+        value: settings.darkMode
+    }
 
     Shell {
         id: shell
@@ -34,6 +48,10 @@ ApplicationWindow {
     Connections {
         target: shell.navSystem
         function onClicked() { shell.currentPage = 3 }
+    }
+    Connections {
+        target: shell.systemPage.darkModeSwitch
+        function onToggled() { settings.darkMode = shell.systemPage.darkModeSwitch.checked }
     }
     Connections {
         target: shell.waterPage.openButton

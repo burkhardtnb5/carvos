@@ -5,6 +5,7 @@ Icon 1.0 Icon.qml
 Card 1.0 Card.qml
 NavButton 1.0 NavButton.qml
 ActionButton 1.0 ActionButton.qml
+ToggleSwitch 1.0 ToggleSwitch.qml
 LevelBar 1.0 LevelBar.qml
 InfoRow 1.0 InfoRow.qml
 StatusRow 1.0 StatusRow.qml

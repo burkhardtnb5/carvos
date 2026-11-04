@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Speichert ein Bild jeder Seite der Oberfläche, ohne ein Fenster zu öffnen.
 
-Aufruf: tools/screenshot.py ZIELORDNER [BREITExHÖHE]
+Aufruf: tools/screenshot.py ZIELORDNER [BREITExHÖHE] [hell]
 """
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 os.environ.setdefault("QT_ENABLE_HIGHDPI_SCALING", "0")
+# Die echten Einstellungen bleiben unberührt.
+os.environ["XDG_CONFIG_HOME"] = tempfile.mkdtemp(prefix="carvos-screenshot-")
 
 from PySide6 import QtQuick  # noqa: E402,F401
 from PySide6.QtCore import QTimer, QUrl  # noqa: E402
@@ -25,8 +28,12 @@ def main():
     target.mkdir(parents=True, exist_ok=True)
     width, height = map(int, (sys.argv[2] if len(sys.argv) > 2 else "1024x600").split("x"))
 
+    light = "hell" in sys.argv[3:]
+
     QQuickStyle.setStyle("Basic")
     app = QGuiApplication(sys.argv[:1])
+    app.setOrganizationName("CARVOS")
+    app.setApplicationName("carvos-ui")
     engine = QQmlApplicationEngine()
     engine.addImportPath(str(UI_DIR / "imports"))
     engine.load(QUrl.fromLocalFile(str(UI_DIR / "content" / "App.qml")))
@@ -35,6 +42,8 @@ def main():
     window = engine.rootObjects()[0]
     window.setWidth(width)
     window.setHeight(height)
+    window.setProperty("darkMode", not light)
+    suffix = "-hell" if light else ""
 
     pages = iter(enumerate(PAGES))
 
@@ -47,7 +56,7 @@ def main():
         QTimer.singleShot(400, lambda: save(step[1]))
 
     def save(name):
-        window.grabWindow().save(str(target / f"{name}-{width}x{height}.png"))
+        window.grabWindow().save(str(target / f"{name}-{width}x{height}{suffix}.png"))
         next_page()
 
     QTimer.singleShot(400, next_page)

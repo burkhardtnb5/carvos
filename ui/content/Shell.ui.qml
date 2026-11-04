@@ -12,6 +12,7 @@ Rectangle {
     property alias navWater: navWater
     property alias navSystem: navSystem
     property alias waterPage: waterPage
+    property alias systemPage: systemPage
 
     width: 1024
     height: 600
@@ -134,6 +135,7 @@ Rectangle {
             valveOpen: root.valveOpen
         }
         SystemPage {
+            id: systemPage
         }
     }
 }

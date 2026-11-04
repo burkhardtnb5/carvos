@@ -25,8 +25,8 @@ Bestehende Nodes:
                                                 ▼
                      ┌──────────── Hub (Raspberry Pi) ────────────┐
                      │ hostapd (AP)   mosquitto (MQTT-Broker)     │
-                     │ carvosd (Python): Logik, Alarme, SQLite    │
-                     │ carvos-ui (Qt 6 QML + PySide6, eglfs)      │
+                     │ carvosd (C++): Logik, Alarme, SQLite       │
+                     │ carvos-ui (Qt 6 QML + C++, eglfs)          │
                      └────────────────────────────────────────────┘
  Kamera-Node ──MJPEG über HTTP direkt an die UI (nicht über MQTT)
 ```
@@ -45,7 +45,7 @@ Bestehende Nodes:
 
 - Raspberry Pi OS Lite **64 Bit** (Trixie) auf Pi 4 **und** Zero 2W – eine Architektur,
   ein Image. 32 Bit nur, falls die Zero nachweislich zu wenig RAM hat.
-- Pakete aus `apt` statt `pip` (Qt 6.8, PySide6 6.8, mosquitto 2.0, python3-paho-mqtt 2.1).
+- Pakete aus `apt` statt `pip` (Qt 6.8, mosquitto 2.0).
 - Dienste als systemd-Units, kein Docker.
 - Root-Dateisystem schreibgeschützt (Overlay-FS). Schreibbare Daten unter `/data`
   (eigene Partition): Konfiguration, SQLite, Releases.
@@ -101,16 +101,19 @@ Bestehende Nodes:
 
 ## Software
 
-- **carvosd** (Python, systemd): Gerätezustände, Pairing, Automatisierungen,
+- **Sprachen:** C++ für Programme auf dem Gerät, QML für das Aussehen. Python nur für Hilfsskripte.
+- **carvosd** (C++, systemd): Gerätezustände, Pairing, Automatisierungen,
   Alarme (z. B. Gas < 20 %), Verläufe in SQLite, Service-Modus, Updates.
-- **carvos-ui** (Qt 6 QML, Logik in Python/PySide6): zeigt an und schickt Befehle,
+- **carvos-ui** (Qt 6 QML, Logik in C++): zeigt an und schickt Befehle,
   enthält keine Systemlogik. Stürzt sie ab, läuft der Daemon weiter.
   - Auf dem Pi: `QT_QPA_PLATFORM=eglfs` (Vollbild ohne Desktop).
   - Auf dem PC: normales Fenster zum Entwickeln.
-  - Falls die Zero zu langsam ist: Logik nach C++ verschieben, QML bleibt.
-- MQTT-Bibliothek: paho-mqtt (nicht QtMqtt – nur GPL).
+  - QML und Schriften sind einkompiliert, auf dem Pi liegt nur die Binärdatei `/opt/carvos/bin/carvos-ui`.
+- MQTT-Bibliothek: Paho (nicht QtMqtt – nur GPL).
+- Build: am PC für das Fenster direkt, für den Pi im Podman-Container (`ci/`, Debian Trixie, Qt 6.8).
+  Der Container passt zum Pi; das Qt 6.10 des PCs darf nie in die Pi-Binärdatei gelangen.
 - Gestaltung grafisch mit Qt Design Studio, Community Edition (`ui/carvos.qmlproject`):
-  Aussehen in `*.ui.qml`, Logik getrennt davon. Start weiter über `ui/main.py`, nicht über
+  Aussehen in `*.ui.qml`, Logik getrennt davon. Start weiter über die eigene Binärdatei, nicht über
   den Python-Export von Design Studio. Zielversion Qt 6.8, keine Studio-eigenen Komponenten.
 - Bildschirmtastatur: eigene QML-Tastatur oder Qt Virtual Keyboard (GPL).
 - Später: Web-Oberfläche fürs Handy über MQTT-over-WebSockets.
@@ -128,6 +131,10 @@ der Firma in der UI, da das System auch weitergegeben wird.
   - Akzent-Rot sparsam einsetzen (aktive Elemente, Auswahl, Schriftzug).
   - Warnungen gelb/orange, kritische Alarme zusätzlich mit Symbol, Text und
     Banner – nie nur über die Farbe unterscheiden.
+- Hell- und Dunkelmodus: Umschalter auf der Seite „System“. Die Wahl liegt per `Settings`
+  in `~/.config/CARVOS/`; mit Overlay-FS muss das später nach `/data`.
+- Boot ohne sichtbare Meldungen (`provisioning/setup-quiet-boot.sh`). Ein eigenes Logo
+  soll später zuerst als Startbild in der Oberfläche kommen, Plymouth nur bei Bedarf.
 - Touch: Schaltflächen mind. ca. 10 mm groß, Schrift auch aus Abstand lesbar.
 
 ## Service-Modus
@@ -147,7 +154,7 @@ Nodes verlieren währenddessen die Verbindung und verbinden sich danach selbst n
 
 Kein `git pull` auf dem Gerät. Stattdessen:
 
-1. Getaggte Releases als Archiv (z. B. GitHub Release `carvos-1.4.0.tar.gz`),
+1. Getaggte Releases mit den Binärdateien als Archiv (z. B. GitHub Release `carvos-1.4.0.tar.gz`),
    signiert mit `minisign`.
 2. Hub prüft die Signatur, entpackt nach `/data/releases/<version>/`.
 3. Symlink `/data/current` atomar umschalten (`rename`), Dienste neu starten.

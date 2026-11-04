@@ -7,6 +7,7 @@ ColumnLayout {
 
     property alias addDeviceButton: addDeviceButton
     property alias serviceButton: serviceButton
+    property alias darkModeSwitch: darkModeSwitch
 
     spacing: Theme.spacing
 
@@ -94,6 +95,24 @@ ColumnLayout {
                     Layout.fillWidth: true
                     label: "Version"
                     value: "0.1.0"
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacing
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Dunkler Modus"
+                        color: Theme.textMuted
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontBody
+                    }
+
+                    ToggleSwitch {
+                        id: darkModeSwitch
+                        checked: Theme.dark
+                    }
                 }
 
                 Item {
