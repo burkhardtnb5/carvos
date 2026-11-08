@@ -28,13 +28,15 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 - **Raspberry Pi 4** (`noah@192.168.1.111`, Raspberry Pi OS Lite 64 Bit, Trixie):
   Testgerät. `eth0` = Entwicklung/Internet, `wlan0` = Access Point des Hubs.
   Beim Umkonfigurieren von `wlan0` niemals `eth0` anfassen, sonst ist der Pi weg.
+  - `/opt/carvos` ist ein Symlink auf die aktive Version unter `/data/releases/` (`carvos-update status`).
   - Oberfläche: Binärdatei `/opt/carvos/bin/carvos-ui`, gestartet von `carvos-ui.service`
     mit eglfs, ohne Desktop (`provisioning/setup-kiosk.sh`).
+    Ohne Bildschirm startet sie nicht (`ExecCondition`); beim Einstecken startet udev sie,
+    beim Abziehen stoppt sie (`provisioning/files/99-carvos-display.rules`).
   - Boot ohne Regenbogenbild und Meldungen (`provisioning/setup-quiet-boot.sh`, Originale
     als `.orig` in `/boot/firmware`). Fehler stehen nicht auf dem Display, sondern in `journalctl -b`.
-  - Der Pi hat kein Repo: In der Entwicklung bekommt er die Binärdatei und `provisioning/`
-    per SSH vom Dev-PC. Später aktualisiert sich der Hub selbst aus den Releases.
-    In der aktuellen Wohnung ist GitHub von ihm aus gesperrt, SSH vom PC geht.
+  - Der Pi hat kein Repo: In der Entwicklung bekommt er ein Paket per SSH vom Dev-PC
+    (`provisioning/deploy-ui.sh`), sonst aktualisiert er sich mit `carvos-update` aus den GitHub-Releases.
 - Später: Raspberry Pi Zero 2W als günstiges Zielgerät (512 MB RAM – sparsam bleiben).
 
 ## Regeln
@@ -53,7 +55,8 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 - Am PC bauen: `cmake -S . -B build/pc -G Ninja && cmake --build build/pc`
 - Starten mit automatischem Neuladen: `build/pc/ui/carvos-ui --dev ui`
 - Für den Pi bauen (kompiliert immer auf dem PC, nie auf dem Pi): `ci/build-arm64.sh`
-- Auf den Pi kopieren und neu starten: `provisioning/deploy-ui.sh`
+- Auf den Pi spielen (als Paket, wie ein Update): `provisioning/deploy-ui.sh [noah@HOST]`
+- Release veröffentlichen: `ci/release.sh 1.2.3` (baut, packt, signiert, `gh release create`)
 - Bilder aller Seiten ohne Fenster: `ui/tools/screenshot.py ZIELORDNER [BREITExHÖHE]`
 - Qt Quick (QML) mit C++. Neue QML-Dateien auch in der passenden `CMakeLists.txt` eintragen (und in `imports/Carvos/qmldir`). Der Pi hat nur Qt 6.8, der PC 6.10: keine neueren Funktionen als 6.8 nutzen.
 - Das Projekt muss in Qt Design Studio bearbeitbar bleiben (`ui/carvos.qmlproject`):

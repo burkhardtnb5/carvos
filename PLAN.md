@@ -41,8 +41,11 @@ Erledigte Punkte abhaken.
 ## Phase 4 – Service-Modus und Updates
 - [ ] Service-Modus (WLAN-Suche, Bildschirmtastatur, Captive-Portal-Hinweis, Timeout)
 - [ ] Repo öffentlich machen (vorher Historie auf Secrets prüfen)
-- [ ] Release-Paket auf dem Dev-PC bauen und signieren, auf GitHub veröffentlichen
-- [ ] Selbst-Update des Hubs: Download im Service-Modus, Signatur, Symlink-Umschaltung, Health-Check, Rollback
+- [x] Release-Paket auf dem Dev-PC bauen und signieren, auf GitHub veröffentlichen (`ci/release.sh`, noch ungetestet)
+- [x] Selbst-Update des Hubs: Download, Signatur, Symlink-Umschaltung, Health-Check, Rollback (`carvos-update`)
+- [ ] minisign-Schlüssel pro Dev-PC erzeugen, `provisioning/files/minisign.d/<pc-name>.pub` einchecken
+- [ ] Erstes echtes Release mit `ci/release.sh` und Test auf dem Pi
+- [ ] Service-Modus startet `carvos-update.service`
 
 ## Phase 5 – Fahrzeugtauglich machen
 - [ ] Standardbenutzer `carvos` ohne `sudo` anlegen, Dienste darunter laufen lassen

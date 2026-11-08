@@ -161,7 +161,7 @@ Dev-PC ── baut Binärdateien für Hub und Nodes
 ```
 
 - Gebaut wird nur auf dem Dev-PC, nie auf dem Hub. Auf dem Hub liegen weder Repo noch
-  Compiler und auch kein Claude Code.
+  Compiler. Auf dem Testgerät läuft derzeit zusätzlich Claude Code, das gehört nicht ins Image.
 - Der Dev-PC ist austauschbar. Der Build darf deshalb nichts von diesem Rechner voraussetzen:
   Binärdateien entstehen im Container (`ci/`), die nötigen Pakete stehen in `CLAUDE.md`.
 - Die Node-Firmware wird ebenfalls auf dem Dev-PC gebaut und bis auf Weiteres per USB geflasht.
@@ -179,6 +179,44 @@ Kein `git pull` auf dem Gerät. Stattdessen:
 4. Health-Check (systemd-Watchdog oder MQTT-Heartbeat) innerhalb von 60 s,
    sonst automatisch zurück zur vorigen Version.
 5. Die letzten 2–3 Versionen behalten.
+
+### Umsetzung (Stand 2026-11-08)
+
+- Paket `carvos-hub-arm64.tar.gz` mit `VERSION`, `bin/` und `provisioning/`, daneben die Signatur
+  `carvos-hub-arm64.tar.gz.minisig`. Gepackt von `ci/package-hub.sh`, veröffentlicht von `ci/release.sh`
+  (Tag `vX.Y.Z`).
+- Mehrere Dev-PCs: Jeder hat seinen eigenen geheimen Schlüssel (Standard `~/.minisign/carvos.key`, verlässt
+  den PC nie). Die öffentlichen liegen als `provisioning/files/minisign.d/<pc-name>.pub` im Repo und auf dem
+  Hub unter `/etc/carvos/minisign.d/`. Ein Release braucht eine Signatur, die zu einem davon passt.
+  - Neuer PC: `minisign -G -p provisioning/files/minisign.d/<pc-name>.pub -s ~/.minisign/carvos.key`,
+    einchecken, pushen. `ci/release.sh` bricht ab, solange der eigene Schlüssel dort fehlt.
+  - Die Liste kommt mit jedem Release und wird nach erfolgreichem Update übernommen (nie leer).
+  - PC verloren: seine `.pub` löschen und vom anderen PC ein Release machen. Hubs mit diesem Release
+    nehmen den alten Schlüssel nicht mehr an. Bis dahin schützt nur, dass für ein Release auch
+    Schreibzugriff aufs GitHub-Repo nötig ist.
+- `/opt/carvos` → `/data/current` → `/data/releases/<version>`. Units und udev-Regeln verweisen weiter
+  auf `/opt/carvos/...`, das Umschalten des Symlinks reicht.
+- `carvos-update` (Shell-Skript, `/usr/local/sbin`, eingerichtet von `provisioning/setup-updater.sh`):
+  - `online`: fragt die GitHub-API nach dem neuesten Release (`releases/latest`), lädt nur, wenn es
+    neuer ist, prüft die Signatur, entpackt, schaltet um.
+  - Installiert danach die `carvos-*.service`-Units und `*.rules` der neuen Version nach `/etc`,
+    entfernt die, die nur die alte Version hatte, und startet die Dienste neu.
+  - Health-Check nach 30 s: Jeder Dienst läuft ohne automatischen Neustart oder wurde per
+    `ExecCondition` bewusst übersprungen (Oberfläche ohne Bildschirm). Sonst zurück zur vorigen
+    Version, die neue wird als fehlerhaft markiert und nicht erneut geladen.
+  - Kein Downgrade über `online`; Versionen vergleicht `dpkg --compare-versions`.
+  - Stromausfall mitten im Update: `/data/state/pending` bleibt liegen, `carvos-update-boot.service`
+    prüft beim nächsten Start erneut und nimmt zurück, wenn nötig.
+  - Das Skript aktualisiert sich selbst aus dem Release, aber erst nach erfolgreichem Health-Check.
+- Ausgelöst über `carvos-update.service` (oneshot). Der Service-Modus startet ihn später; bis dahin von Hand
+  `sudo systemctl start carvos-update`. Die Schnittstelle ist nicht fest: geladen wird über die
+  Standardroute, also heute `eth0`, im Fahrzeug `wlan0` als Client im Service-Modus.
+- Entwicklung: `provisioning/deploy-ui.sh` packt denselben Paketaufbau und spielt ihn per
+  `carvos-update install --unsigned` ein. Damit wird bei jedem Deploy auch der Update-Weg getestet.
+- Solange das Repo privat ist, braucht der Hub ein Token in `/etc/carvos/github-token`. Ziel bleibt
+  das öffentliche Repo ohne Zugangsdaten.
+- Mit Overlay-FS später: `/etc`-Dateien (Units, Regeln, Update-Programm) müssen auf `/data` oder
+  über das Overlay hinaus geschrieben werden – noch offen.
 
 Das Repo wird dafür öffentlich, sonst bräuchte jeder Hub Zugangsdaten zum Laden der Releases.
 

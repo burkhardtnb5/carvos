@@ -1,0 +1,377 @@
+#!/bin/bash
+# carvos-update – aktualisiert den CARVOS-Hub aus signierten Release-Paketen.
+#
+#   carvos-update online [--force]               neuestes GitHub-Release laden und einspielen
+#   carvos-update install PAKET [--sig DATEI]    Paket von Hand einspielen (z. B. vom Dev-PC)
+#   carvos-update install PAKET --unsigned       Entwicklungsstand ohne Signatur (nur Dev-PC)
+#   carvos-update rollback                       zur vorigen Version zurück
+#   carvos-update boot-check                     nach Abbruch (Stromausfall) Zustand prüfen
+#   carvos-update status                         installierte Versionen anzeigen
+#
+# Ablauf siehe docs/ARCHITEKTUR.md, Abschnitt „Updates des Hubs“.
+# Wird als root ausgeführt, normalerweise über carvos-update.service.
+set -euo pipefail
+
+CONF=${CARVOS_UPDATE_CONF:-/etc/carvos/update.conf}
+REPO=burkhardtnb5/carvos
+ASSET=carvos-hub-arm64.tar.gz
+API=https://api.github.com
+# Ein öffentlicher Schlüssel pro Dev-PC; eine passende Signatur genügt.
+KEY_DIR=/etc/carvos/minisign.d
+TOKEN_FILE=/etc/carvos/github-token
+DATA=/data
+KEEP=3
+HEALTH_SECONDS=30
+# shellcheck source=/dev/null
+[ -r "$CONF" ] && . "$CONF"
+
+RELEASES=$DATA/releases
+STATE=$DATA/state
+CURRENT=$DATA/current
+SELF=/usr/local/sbin/carvos-update
+
+log() { echo "carvos-update: $*" >&2; }
+die() { log "FEHLER: $*"; exit 1; }
+
+current_version() {
+    if [ -L "$CURRENT" ]; then basename "$(readlink "$CURRENT")"; else echo none; fi
+}
+
+valid_version() { [[ $1 =~ ^[0-9]+\.[0-9]+\.[0-9]+([~+.-][0-9A-Za-z.+~-]+)?$ ]]; }
+
+is_newer() { [ "$2" = none ] || dpkg --compare-versions "$1" gt "$2"; }
+
+is_bad() { [ -f "$STATE/bad" ] && grep -qxF "$1" "$STATE/bad"; }
+
+# Dienste, die zu einem Release gehören und nach dem Umschalten neu starten.
+# Die Update-Dienste selbst laufen gerade und werden nur installiert.
+managed_units() {
+    local f
+    for f in "$CURRENT"/provisioning/files/carvos-*.service; do
+        [ -e "$f" ] || continue
+        f=$(basename "$f")
+        case "$f" in carvos-update*.service) ;; *) echo "$f" ;; esac
+    done
+}
+
+# ---------------------------------------------------------------- Netz
+
+wait_for_time() {
+    # Ohne richtige Uhr schlägt TLS fehl (der Hub hat noch keine RTC).
+    local i
+    for i in $(seq 30); do
+        [ "$(timedatectl show -p NTPSynchronized --value 2>/dev/null)" = yes ] && return 0
+        sleep 2
+    done
+    log "Warnung: Uhrzeit nicht synchronisiert, TLS kann fehlschlagen"
+}
+
+fetch() {  # fetch URL ZIEL [ACCEPT]
+    local args=(-fsSL --retry 3 --connect-timeout 15 --max-time 600 -o "$2"
+                -H "Accept: ${3:-application/vnd.github+json}"
+                -H "X-GitHub-Api-Version: 2022-11-28")
+    # Nur nötig, solange das Repo privat ist.
+    if [ -s "$TOKEN_FILE" ]; then
+        args+=(-H "Authorization: Bearer $(<"$TOKEN_FILE")")
+    fi
+    curl "${args[@]}" "$1"
+}
+
+# ---------------------------------------------------------- Systemdateien
+
+# Installiert Units und udev-Regeln der aktuellen Version und entfernt die,
+# die nur die vorige Version hatte.
+apply_system_files() {
+    local f dest new_list
+    new_list=$(mktemp)
+    for f in "$CURRENT"/provisioning/files/carvos-*.service; do
+        [ -e "$f" ] || continue
+        dest=/etc/systemd/system/$(basename "$f")
+        install -m 644 "$f" "$dest"; echo "$dest" >> "$new_list"
+    done
+    for f in "$CURRENT"/provisioning/files/*.rules; do
+        [ -e "$f" ] || continue
+        dest=/etc/udev/rules.d/$(basename "$f")
+        install -m 644 "$f" "$dest"; echo "$dest" >> "$new_list"
+    done
+    if [ -f "$STATE/installed-files" ]; then
+        { grep -vxFf "$new_list" "$STATE/installed-files" || true; } | while read -r dest; do
+            log "entferne $dest"
+            case "$dest" in *.service) systemctl disable -q --now "$(basename "$dest")" || true ;; esac
+            rm -f "$dest"
+        done
+    fi
+    mv "$new_list" "$STATE/installed-files"
+    chmod 644 "$STATE/installed-files"
+    systemctl daemon-reload
+    udevadm control --reload
+}
+
+restart_units() {
+    local u
+    for u in $(managed_units); do
+        systemctl enable -q "$u" 2>/dev/null || true
+        log "starte $u neu"
+        systemctl restart "$u" || log "Warnung: $u ließ sich nicht starten"
+    done
+}
+
+# Gesund = läuft ohne automatische Neustarts, oder wurde bewusst übersprungen
+# (z. B. Oberfläche ohne Bildschirm). Später zusätzlich: Heartbeat von carvosd.
+health_check() {
+    local u active result restarts ok=0
+    log "prüfe Dienste (${HEALTH_SECONDS} s)"
+    sleep "$HEALTH_SECONDS"
+    for u in $(managed_units); do
+        active=$(systemctl show -p ActiveState --value "$u")
+        result=$(systemctl show -p Result --value "$u")
+        restarts=$(systemctl show -p NRestarts --value "$u")
+        if [ "$active" = active ] && [ "$restarts" = 0 ]; then
+            log "  $u: läuft"
+        elif [ "$active" = inactive ] && [ "$result" = exec-condition ]; then
+            log "  $u: übersprungen (Bedingung nicht erfüllt)"
+        else
+            log "  $u: NICHT gesund (Zustand $active, Ergebnis $result, Neustarts $restarts)"
+            ok=1
+        fi
+    done
+    return $ok
+}
+
+# ------------------------------------------------------------ Versionen
+
+switch_to() {
+    ln -sfn "releases/$1" "$DATA/.current.new"
+    mv -Tf "$DATA/.current.new" "$CURRENT"   # rename(): atomar
+    sync
+}
+
+rollback_to() {
+    local prev=$1
+    [ "$prev" != none ] && [ -d "$RELEASES/$prev" ] || die "keine vorige Version vorhanden"
+    log "zurück zu $prev"
+    switch_to "$prev"
+    apply_system_files
+    restart_units
+    rm -f "$STATE/pending"
+}
+
+cleanup() {
+    local cur prev v n
+    cur=$(current_version)
+    prev=$(cat "$STATE/previous" 2>/dev/null || echo none)
+    n=$(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d ! -name '.*' | wc -l)
+    for v in $(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | sort -V); do
+        [ "$n" -le "$KEEP" ] && break
+        [ "$v" = "$cur" ] || [ "$v" = "$prev" ] && continue
+        log "lösche alte Version $v"
+        rm -rf "${RELEASES:?}/$v"
+        n=$((n - 1))
+    done
+    rm -rf "$RELEASES"/.stage.* 2>/dev/null || true
+}
+
+verify_signature() {  # verify_signature PAKET SIGNATUR
+    local key found=0
+    for key in "$KEY_DIR"/*.pub; do
+        [ -r "$key" ] || continue
+        found=1
+        if minisign -Vq -m "$1" -x "$2" -p "$key" 2>/dev/null; then
+            log "Signatur gültig (Schlüssel $(basename "$key" .pub))"
+            return 0
+        fi
+    done
+    [ "$found" = 1 ] || die "keine öffentlichen Schlüssel in $KEY_DIR"
+    die "Signatur ungültig (passt zu keinem Schlüssel in $KEY_DIR)"
+}
+
+# Übernimmt die Schlüsselliste der aktiven Version: neue Dev-PCs kommen dazu,
+# entfernte (z. B. verlorener PC) werden gesperrt. Eine leere Liste wird nie
+# übernommen, sonst wären keine Updates mehr möglich.
+sync_keys() {
+    local src=$CURRENT/provisioning/files/minisign.d f
+    compgen -G "$src/*.pub" >/dev/null || { log "Warnung: Release ohne Schlüssel, behalte die alten"; return 0; }
+    install -d -m 755 "$KEY_DIR"
+    for f in "$KEY_DIR"/*.pub; do
+        [ -e "$f" ] && [ ! -e "$src/$(basename "$f")" ] && { log "sperre Schlüssel $(basename "$f" .pub)"; rm -f "$f"; }
+    done
+    for f in "$src"/*.pub; do
+        cmp -s "$f" "$KEY_DIR/$(basename "$f")" || { log "übernehme Schlüssel $(basename "$f" .pub)"; install -m 644 "$f" "$KEY_DIR/"; }
+    done
+}
+
+# Das Update-Programm aktualisiert sich selbst, aber erst nach erfolgreichem Update.
+self_update() {
+    local new=$CURRENT/provisioning/files/carvos-update
+    [ -f "$new" ] || return 0
+    cmp -s "$new" "$SELF" && return 0
+    if bash -n "$new"; then
+        install -m 755 "$new" "$SELF.new" && mv -f "$SELF.new" "$SELF"
+        log "Update-Programm aktualisiert"
+    else
+        log "Warnung: neues Update-Programm fehlerhaft, behalte das alte"
+    fi
+}
+
+activate() {
+    local ver=$1 prev
+    prev=$(current_version)
+    echo "$prev" > "$STATE/previous"
+    echo "$ver" > "$STATE/pending"
+    sync
+    log "schalte um: $prev -> $ver"
+    switch_to "$ver"
+    apply_system_files
+    restart_units
+    if health_check; then
+        rm -f "$STATE/pending"
+        log "Version $ver aktiv"
+        cleanup
+        sync_keys
+        self_update
+    else
+        echo "$ver" >> "$STATE/bad"
+        rollback_to "$prev"
+        rm -rf "${RELEASES:?}/$ver"
+        systemctl reset-failed 'carvos-*' 2>/dev/null || true
+        die "Version $ver ist fehlerhaft und wurde zurückgenommen"
+    fi
+}
+
+# install_package PAKET SIGNATUR|"" ERWARTETE_VERSION|"" FORCE(0/1)
+install_package() {
+    local pkg=$1 sig=$2 expected=$3 force=$4 stage ver cur
+    if [ -n "$sig" ]; then
+        verify_signature "$pkg" "$sig"
+    else
+        log "Warnung: Paket ohne Signatur"
+    fi
+
+    stage=$(mktemp -d "$RELEASES/.stage.XXXXXX")
+    tar -xzf "$pkg" -C "$stage" --no-same-owner
+    ver=$(tr -d '[:space:]' < "$stage/VERSION" 2>/dev/null || true)
+    valid_version "$ver" || { rm -rf "$stage"; die "ungültige VERSION im Paket: '$ver'"; }
+    [ -z "$expected" ] || [ "$ver" = "$expected" ] \
+        || { rm -rf "$stage"; die "Paket enthält $ver, erwartet $expected"; }
+    [ -d "$stage/bin" ] && [ -d "$stage/provisioning" ] \
+        || { rm -rf "$stage"; die "Paket unvollständig (bin/ oder provisioning/ fehlt)"; }
+
+    cur=$(current_version)
+    if [ "$ver" = "$cur" ]; then
+        rm -rf "$stage"; log "Version $ver ist bereits installiert"; return 0
+    fi
+    if [ "$force" = 0 ]; then
+        is_newer "$ver" "$cur" || { rm -rf "$stage"; die "$ver ist nicht neuer als $cur (kein Downgrade)"; }
+        ! is_bad "$ver" || { rm -rf "$stage"; die "$ver ist als fehlerhaft markiert"; }
+    fi
+
+    rm -rf "${RELEASES:?}/$ver"
+    chown -R root:root "$stage"
+    chmod 755 "$stage"
+    mv -T "$stage" "$RELEASES/$ver"
+    activate "$ver"
+}
+
+# ------------------------------------------------------------- Befehle
+
+cmd_online() {
+    local force=0 tag ver cur asset_url sig_url
+    [ "${1:-}" = --force ] && force=1
+    wait_for_time
+    TMP=$(mktemp -d "$DATA/.download.XXXXXX")
+    trap 'rm -rf "$TMP"' EXIT
+    local tmp=$TMP
+
+    log "frage neuestes Release von $REPO ab"
+    fetch "$API/repos/$REPO/releases/latest" "$tmp/release.json" \
+        || die "Release-Abfrage fehlgeschlagen (Netz? Repo privat ohne Token?)"
+    tag=$(jq -r .tag_name "$tmp/release.json")
+    ver=${tag#v}
+    valid_version "$ver" || die "ungültiger Tag: $tag"
+    cur=$(current_version)
+    log "installiert: $cur, verfügbar: $ver"
+    if [ "$force" = 0 ]; then
+        [ "$ver" != "$cur" ] || { log "bereits aktuell"; return 0; }
+        is_newer "$ver" "$cur" || { log "installierte Version ist neuer, nichts zu tun"; return 0; }
+        ! is_bad "$ver" || { log "$ver ist als fehlerhaft markiert, übersprungen"; return 0; }
+    fi
+
+    asset_url=$(jq -r --arg n "$ASSET" '.assets[] | select(.name == $n) | .url' "$tmp/release.json")
+    sig_url=$(jq -r --arg n "$ASSET.minisig" '.assets[] | select(.name == $n) | .url' "$tmp/release.json")
+    [ -n "$asset_url" ] && [ -n "$sig_url" ] || die "Release $tag enthält $ASSET oder die Signatur nicht"
+
+    log "lade $ASSET"
+    fetch "$asset_url" "$tmp/pkg.tar.gz" application/octet-stream || die "Download fehlgeschlagen"
+    fetch "$sig_url" "$tmp/pkg.minisig" application/octet-stream || die "Download der Signatur fehlgeschlagen"
+    install_package "$tmp/pkg.tar.gz" "$tmp/pkg.minisig" "$ver" "$force"
+}
+
+cmd_install() {
+    local pkg="" sig="" unsigned=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --sig) sig=$2; shift ;;
+            --unsigned) unsigned=1 ;;
+            *) pkg=$1 ;;
+        esac
+        shift
+    done
+    [ -r "$pkg" ] || die "Paket nicht gefunden: $pkg"
+    [ -z "$sig" ] && [ -r "$pkg.minisig" ] && sig=$pkg.minisig
+    [ -n "$sig" ] || [ "$unsigned" = 1 ] || die "keine Signatur (--sig DATEI oder --unsigned)"
+    # Von Hand eingespielte Pakete dürfen auch älter sein.
+    install_package "$pkg" "$sig" "" 1
+}
+
+# Von Hand zurück: vorige und aktuelle Version tauschen die Rollen,
+# ein zweites rollback springt also wieder vor.
+cmd_rollback() {
+    local cur prev
+    cur=$(current_version)
+    prev=$(cat "$STATE/previous" 2>/dev/null || echo none)
+    rollback_to "$prev"
+    echo "$cur" > "$STATE/previous"
+    log "Version $prev aktiv"
+}
+
+cmd_boot_check() {
+    local ver prev
+    [ -f "$STATE/pending" ] || exit 0
+    ver=$(<"$STATE/pending")
+    prev=$(cat "$STATE/previous" 2>/dev/null || echo none)
+    log "Update auf $ver wurde nicht abgeschlossen, prüfe erneut"
+    if health_check; then
+        rm -f "$STATE/pending"; log "Version $ver aktiv"
+    else
+        echo "$ver" >> "$STATE/bad"
+        rollback_to "$prev"
+        rm -rf "${RELEASES:?}/$ver"
+    fi
+}
+
+cmd_status() {
+    echo "aktiv:     $(current_version)"
+    echo "vorige:    $(cat "$STATE/previous" 2>/dev/null || echo -)"
+    [ -f "$STATE/pending" ] && echo "offen:     $(<"$STATE/pending")"
+    [ -s "$STATE/bad" ] && echo "fehlerhaft: $(paste -sd ' ' "$STATE/bad")"
+    echo "vorhanden: $(find "$RELEASES" -mindepth 1 -maxdepth 1 -type d ! -name '.*' -printf '%f\n' | sort -V | paste -sd ' ')"
+}
+
+# ---------------------------------------------------------------------
+
+[ "$(id -u)" = 0 ] || die "muss als root laufen"
+mkdir -p "$RELEASES" "$STATE"
+
+cmd=${1:-}; shift || true
+[ "$cmd" = status ] && { cmd_status; exit 0; }
+
+exec 9> /run/carvos-update.lock
+flock -n 9 || die "läuft bereits"
+
+case "$cmd" in
+    online)     cmd_online "$@" ;;
+    install)    cmd_install "$@" ;;
+    rollback)   cmd_rollback ;;
+    boot-check) cmd_boot_check ;;
+    *) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+esac

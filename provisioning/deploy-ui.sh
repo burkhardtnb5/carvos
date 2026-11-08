@@ -1,14 +1,21 @@
 #!/bin/bash
-# Kopiert die fertige Binärdatei und die Einrichtung auf den Pi und startet die Oberfläche neu.
+# Spielt den aktuellen Entwicklungsstand auf den Pi – über denselben Weg wie ein Release-Update.
 # Vorher bauen: ci/build-arm64.sh
 # Aufruf: provisioning/deploy-ui.sh [BENUTZER@PI]
+# Einmalig vorher auf dem Pi: provisioning/setup-updater.sh (siehe unten).
 set -euo pipefail
 
-PI=${1:-noah@192.168.1.111}
+PI=${1:-noah@raspberrypi.local}
 REPO=$(cd "$(dirname "$0")/.." && pwd)
-BINARY=$REPO/build/arm64/ui/carvos-ui
+PKG=$REPO/build/dev/carvos-hub-arm64.tar.gz
 
-ssh -t "$PI" 'sudo install -d -o "$USER" -g "$USER" /opt/carvos /opt/carvos/bin'
-rsync -a --delete "$REPO/provisioning" "$PI:/opt/carvos/"
-rsync -a "$BINARY" "$PI:/opt/carvos/bin/carvos-ui"
-ssh -t "$PI" 'if systemctl list-unit-files carvos-ui.service | grep -q carvos-ui; then sudo systemctl restart carvos-ui.service; fi'
+"$REPO/ci/package-hub.sh" "$PKG"
+
+if ! ssh "$PI" 'command -v carvos-update' >/dev/null; then
+    echo "Auf dem Pi fehlt carvos-update, richte es ein ..."
+    rsync -a --delete "$REPO/provisioning/" "$PI:/tmp/carvos-provisioning/"
+    ssh -t "$PI" 'sudo /tmp/carvos-provisioning/setup-updater.sh && rm -rf /tmp/carvos-provisioning'
+fi
+
+scp -q "$PKG" "$PI:/tmp/carvos-dev.tar.gz"
+ssh -t "$PI" 'sudo carvos-update install --unsigned /tmp/carvos-dev.tar.gz; rm -f /tmp/carvos-dev.tar.gz'

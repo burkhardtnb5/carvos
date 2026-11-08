@@ -1,0 +1,11 @@
+[Unit]
+Description=CARVOS Update nach Abbruch prüfen (z. B. Stromausfall)
+ConditionPathExists=/data/state/pending
+After=carvos-ui.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/carvos-update boot-check
+
+[Install]
+WantedBy=multi-user.target

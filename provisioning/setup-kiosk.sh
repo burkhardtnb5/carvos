@@ -16,6 +16,9 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 DEBIAN_FRONTEND=noninteractive apt-get purge -y --autoremove 'python3-pyside6*'
 
 install -m 644 "$BASE/provisioning/files/carvos-ui.service" /etc/systemd/system/carvos-ui.service
+install -m 644 "$BASE/provisioning/files/99-carvos-display.rules" /etc/udev/rules.d/99-carvos-display.rules
+udevadm control --reload
 systemctl daemon-reload
 systemctl enable carvos-ui.service
+# Startet nur, wenn ein Bildschirm angeschlossen ist (ExecCondition).
 systemctl restart carvos-ui.service

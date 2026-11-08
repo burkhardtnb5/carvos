@@ -4,3 +4,7 @@ __pycache__/
 build/
 *.qmlproject.user
 .claude/settings.local.json
+
+# Geheime Signaturschlüssel nie einchecken
+key/
+*.key

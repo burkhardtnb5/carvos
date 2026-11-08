@@ -1,0 +1,2 @@
+# Startet bzw. stoppt die CARVOS-Oberfläche, wenn ein Bildschirm angeschlossen oder abgezogen wird.
+SUBSYSTEM=="drm", KERNEL=="card[0-9]*", ACTION=="add|change", RUN+="/opt/carvos/provisioning/files/display-hotplug.sh"
