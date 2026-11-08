@@ -21,7 +21,17 @@ else
 fi
 rm -f /etc/carvos/minisign.pub   # alter Ort (nur ein Schlüssel)
 install -m 755 "$FILES/carvos-update" /usr/local/sbin/carvos-update
-install -m 644 "$FILES/carvos-update.service" "$FILES/carvos-update-boot.service" /etc/systemd/system/
+install -m 644 "$FILES/carvos-update.service" "$FILES/carvos-update-boot.service" \
+    "$FILES/carvos-service-mode.service" /etc/systemd/system/
+
+# Service-Modus aus der Oberfläche starten (polkit), Benutzer der Oberfläche in die Gruppe carvos.
+# Später läuft die Oberfläche unter dem Benutzer carvos (docs/ARCHITEKTUR.md).
+UI_USER=${CARVOS_UI_USER:-noah}
+groupadd -f carvos
+usermod -aG carvos "$UI_USER"
+install -m 644 "$FILES/50-carvos.polkit" /etc/polkit-1/rules.d/50-carvos.rules
+# Die Oberfläche liest im Entwicklermodus das Journal, dafür reicht die Gruppe adm oder systemd-journal.
+id -nG "$UI_USER" | grep -qwE 'adm|systemd-journal' || usermod -aG systemd-journal "$UI_USER"
 
 # Bisherige Einrichtung als erste Version übernehmen.
 if [ -d /opt/carvos ] && [ ! -L /opt/carvos ]; then

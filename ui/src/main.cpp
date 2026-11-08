@@ -15,8 +15,11 @@
 #include <QQuickWindow>
 #include <QTimer>
 #include <QUrl>
+#include <QVariantMap>
 
 #include <memory>
+
+#include "servicemode.h"
 
 Q_IMPORT_QML_PLUGIN(CarvosPlugin)
 
@@ -25,8 +28,9 @@ namespace {
 class LiveReloader : public QObject
 {
 public:
-    explicit LiveReloader(const QString &uiDir)
+    LiveReloader(const QString &uiDir, const QVariantMap &initialProperties)
         : m_uiDir(uiDir)
+        , m_initialProperties(initialProperties)
     {
         // Editoren speichern in mehreren Schritten, daher kurz abwarten.
         m_timer.setSingleShot(true);
@@ -42,6 +46,7 @@ private:
     {
         m_engine = std::make_unique<QQmlApplicationEngine>();
         m_engine->addImportPath(m_uiDir + QStringLiteral("/imports"));
+        m_engine->setInitialProperties(m_initialProperties);
         m_engine->load(QUrl::fromLocalFile(m_uiDir + QStringLiteral("/content/App.qml")));
         watch();
     }
@@ -71,6 +76,7 @@ private:
     }
 
     QString m_uiDir;
+    QVariantMap m_initialProperties;
     QFileSystemWatcher m_watcher;
     QTimer m_timer;
     std::unique_ptr<QQmlApplicationEngine> m_engine;
@@ -99,14 +105,22 @@ int main(int argc, char *argv[])
     parser.addOption(devOption);
     parser.process(app);
 
+    // Systemnahes kommt aus C++ und wird App.qml beim Start übergeben. Ohne diese Objekte
+    // (Screenshot-Werkzeug, Qt Design Studio) zeigt die Oberfläche nur Beispielwerte.
+    ServiceMode serviceMode;
+    const QVariantMap initialProperties = {
+        {QStringLiteral("serviceMode"), QVariant::fromValue(static_cast<QObject *>(&serviceMode))},
+    };
+
     if (parser.isSet(devOption)) {
         // Alle Fenster sind beim Neuladen kurz geschlossen.
         QGuiApplication::setQuitOnLastWindowClosed(false);
-        LiveReloader reloader(QDir(parser.value(devOption)).absolutePath());
+        LiveReloader reloader(QDir(parser.value(devOption)).absolutePath(), initialProperties);
         return app.exec();
     }
 
     QQmlApplicationEngine engine;
+    engine.setInitialProperties(initialProperties);
     QObject::connect(&engine, &QQmlApplicationEngine::objectCreationFailed, &app,
                      [] { QCoreApplication::exit(EXIT_FAILURE); }, Qt::QueuedConnection);
     engine.loadFromModule("CarvosApp", "App");

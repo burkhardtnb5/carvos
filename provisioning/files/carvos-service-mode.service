@@ -1,0 +1,15 @@
+[Unit]
+Description=CARVOS Service-Modus (derzeit: Update über die bestehende Internetverbindung)
+# Gestartet von der Oberfläche (polkit-Regel 50-carvos.polkit), von Hand:
+# systemctl start carvos-service-mode
+Wants=network-online.target
+After=network-online.target time-sync.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/carvos/provisioning/files/carvos-service-mode
+# Statusdatei für die Oberfläche, bleibt nach dem Ende stehen.
+RuntimeDirectory=carvos
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=yes
+TimeoutStartSec=20min

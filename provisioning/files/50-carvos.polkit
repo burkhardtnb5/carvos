@@ -1,0 +1,11 @@
+// Wird als /etc/polkit-1/rules.d/50-carvos.rules installiert.
+// Die Oberfläche läuft ohne root. Mitglieder der Gruppe carvos dürfen genau eine
+// Sache: den Service-Modus starten. Stoppen, andere Units usw. bleiben verboten.
+polkit.addRule(function (action, subject) {
+    if (action.id === "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("unit") === "carvos-service-mode.service" &&
+        action.lookup("verb") === "start" &&
+        subject.isInGroup("carvos")) {
+        return polkit.Result.YES;
+    }
+});

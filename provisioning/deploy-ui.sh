@@ -11,7 +11,8 @@ PKG=$REPO/build/dev/carvos-hub-arm64.tar.gz
 
 "$REPO/ci/package-hub.sh" "$PKG"
 
-if ! ssh "$PI" 'command -v carvos-update' >/dev/null; then
+# /usr/local/sbin steht für normale Benutzer nicht im PATH, deshalb direkt prüfen.
+if ! ssh "$PI" 'test -x /usr/local/sbin/carvos-update'; then
     echo "Auf dem Pi fehlt carvos-update, richte es ein ..."
     rsync -a --delete "$REPO/provisioning/" "$PI:/tmp/carvos-provisioning/"
     ssh -t "$PI" 'sudo /tmp/carvos-provisioning/setup-updater.sh && rm -rf /tmp/carvos-provisioning'

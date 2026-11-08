@@ -20,7 +20,11 @@ RowLayout {
     }
 
     Text {
+        // Lange Werte (z. B. Entwicklerversionen) in der Mitte kürzen.
+        // Feste Grenze: eine Bindung an die Breite der Zeile bringt das Layout ins Schleudern.
+        Layout.maximumWidth: 280
         text: root.value
+        elide: Text.ElideMiddle
         color: Theme.text
         font.family: Theme.fontFamily
         font.pixelSize: Theme.fontBody

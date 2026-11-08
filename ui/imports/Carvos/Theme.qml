@@ -34,6 +34,8 @@ QtObject {
 
     // Schrift
     readonly property string fontFamily: fontRegular.name
+    // Für Systemausgaben (Entwicklermodus). Auf dem Pi: DejaVu Sans Mono.
+    readonly property string fontMono: "monospace"
     readonly property int fontSmall: 15
     readonly property int fontBody: 18
     readonly property int fontTitle: 22

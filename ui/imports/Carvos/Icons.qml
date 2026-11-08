@@ -11,5 +11,6 @@ QtObject {
     readonly property string check: "M5 12 L10 17 L19 7"
     readonly property string plus: "M12 5 V19 M5 12 H19"
     readonly property string update: "M20 6 V11 H15 M4 18 V13 H9 M19 11 A8 8 0 0 0 5.5 7.5 M5 13 A8 8 0 0 0 18.5 16.5"
+    readonly property string warning: "M12 3 L22 20 H2 Z M12 9 V14 M12 17 L12 17.01"
     readonly property string camera: "M3 8 H7 L9 5 H15 L17 8 H21 V19 H3 Z M12 16 A3 3 0 1 0 12 10 A3 3 0 0 0 12 16 Z"
 }

@@ -2,7 +2,11 @@ set(QT_QML_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/qml)
 
 add_subdirectory(imports/Carvos)
 
-qt_add_executable(carvos-ui src/main.cpp)
+qt_add_executable(carvos-ui
+    src/main.cpp
+    src/servicemode.cpp
+    src/servicemode.h
+)
 
 # QML und Schriften werden einkompiliert, der Pi braucht nur die Binärdatei.
 set(CARVOS_CONTENT_FILES
@@ -12,6 +16,7 @@ set(CARVOS_CONTENT_FILES
     content/GasPage.ui.qml
     content/WaterPage.ui.qml
     content/SystemPage.ui.qml
+    content/ServiceOverlay.ui.qml
 )
 foreach(file ${CARVOS_CONTENT_FILES})
     get_filename_component(name ${file} NAME)

@@ -6,7 +6,8 @@ Conflicts=getty@tty1.service
 
 [Service]
 User=noah
-SupplementaryGroups=video render input
+# carvos: darf den Service-Modus starten (polkit-Regel 50-carvos.polkit)
+SupplementaryGroups=video render input carvos
 WorkingDirectory=/opt/carvos
 Environment=QT_QPA_PLATFORM=eglfs
 Environment=QT_QPA_EGLFS_INTEGRATION=eglfs_kms

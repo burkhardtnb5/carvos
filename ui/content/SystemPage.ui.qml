@@ -8,6 +8,9 @@ ColumnLayout {
     property alias addDeviceButton: addDeviceButton
     property alias serviceButton: serviceButton
     property alias darkModeSwitch: darkModeSwitch
+    property alias developerModeSwitch: developerModeSwitch
+    property string version: "0.1.0"
+    property bool developerMode: false
 
     spacing: Theme.spacing
 
@@ -94,7 +97,7 @@ ColumnLayout {
                 InfoRow {
                     Layout.fillWidth: true
                     label: "Version"
-                    value: "0.1.0"
+                    value: root.version
                 }
 
                 RowLayout {
@@ -112,6 +115,24 @@ ColumnLayout {
                     ToggleSwitch {
                         id: darkModeSwitch
                         checked: Theme.dark
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: Theme.spacing
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "Entwicklermodus"
+                        color: Theme.textMuted
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontBody
+                    }
+
+                    ToggleSwitch {
+                        id: developerModeSwitch
+                        checked: root.developerMode
                     }
                 }
 

@@ -1,0 +1,56 @@
+#!/bin/bash
+# Service-Modus des Hubs. Läuft als root über carvos-service-mode.service,
+# die Oberfläche startet ihn (erlaubt per polkit, siehe 50-carvos.polkit).
+#
+# Derzeit: Update über die bestehende Internetverbindung (eth0).
+# Später (docs/ARCHITEKTUR.md, „Service-Modus“): hostapd stoppen, wlan0 als Client,
+# WLAN-Auswahl in der Oberfläche, danach zurück in den AP-Modus.
+#
+# Den Fortschritt liest die Oberfläche aus /run/carvos/service-mode (phase, message,
+# invocation). Phasen: start, netz, update, fertig, fehler.
+# Die ausführliche Ausgabe steht im Journal (Entwicklermodus der Oberfläche).
+set -uo pipefail
+
+STATUS=/run/carvos/service-mode
+PHASE=""
+
+status() {
+    PHASE=$1
+    printf 'phase=%s\nmessage=%s\ninvocation=%s\n' "$1" "$2" "${INVOCATION_ID:-}" > "$STATUS.tmp"
+    chmod 644 "$STATUS.tmp"
+    mv -f "$STATUS.tmp" "$STATUS"
+    echo "== $2"
+}
+
+finish() {
+    case "$PHASE" in
+        fertig|fehler) ;;
+        *) status fehler "Service-Modus abgebrochen" ;;
+    esac
+}
+
+mkdir -p -m 755 /run/carvos
+trap finish EXIT
+
+status start "Service-Modus gestartet"
+
+status netz "Prüfe die Internetverbindung"
+dev=$(ip -o route get 1.1.1.1 2>/dev/null | sed -n 's/.* dev \([^ ]*\).*/\1/p')
+if [ -z "$dev" ] || ! curl -fsS -o /dev/null --max-time 15 https://api.github.com; then
+    status fehler "Keine Internetverbindung. Netzwerkkabel anschließen und erneut versuchen."
+    exit 1
+fi
+echo "Internet über $dev"
+
+before=$(readlink /data/current 2>/dev/null || true)
+status update "Suche nach Updates (über $dev)"
+if ! /usr/local/sbin/carvos-update online; then
+    status fehler "Update fehlgeschlagen, das System läuft weiter mit der bisherigen Version."
+    exit 1
+fi
+after=$(readlink /data/current 2>/dev/null || true)
+if [ "$before" = "$after" ]; then
+    status fertig "Das System ist aktuell (Version ${after##*/})."
+else
+    status fertig "Aktualisiert auf Version ${after##*/}."
+fi

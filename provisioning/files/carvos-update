@@ -43,14 +43,15 @@ is_newer() { [ "$2" = none ] || dpkg --compare-versions "$1" gt "$2"; }
 
 is_bad() { [ -f "$STATE/bad" ] && grep -qxF "$1" "$STATE/bad"; }
 
-# Dienste, die zu einem Release gehören und nach dem Umschalten neu starten.
-# Die Update-Dienste selbst laufen gerade und werden nur installiert.
+# Dauerdienste, die zu einem Release gehören und nach dem Umschalten neu starten.
+# Oneshot-Units (Update, Service-Modus) sind Werkzeuge: Sie laufen evtl. gerade
+# selbst und werden nur installiert, nicht neu gestartet oder geprüft.
 managed_units() {
     local f
     for f in "$CURRENT"/provisioning/files/carvos-*.service; do
         [ -e "$f" ] || continue
-        f=$(basename "$f")
-        case "$f" in carvos-update*.service) ;; *) echo "$f" ;; esac
+        grep -q '^Type=oneshot' "$f" && continue
+        basename "$f"
     done
 }
 
@@ -92,6 +93,12 @@ apply_system_files() {
     for f in "$CURRENT"/provisioning/files/*.rules; do
         [ -e "$f" ] || continue
         dest=/etc/udev/rules.d/$(basename "$f")
+        install -m 644 "$f" "$dest"; echo "$dest" >> "$new_list"
+    done
+    # polkit liest neue Regeln selbst ein.
+    for f in "$CURRENT"/provisioning/files/*.polkit; do
+        [ -e "$f" ] || continue
+        dest=/etc/polkit-1/rules.d/$(basename "$f" .polkit).rules
         install -m 644 "$f" "$dest"; echo "$dest" >> "$new_list"
     done
     if [ -f "$STATE/installed-files" ]; then

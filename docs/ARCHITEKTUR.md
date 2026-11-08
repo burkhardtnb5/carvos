@@ -152,6 +152,27 @@ der Firma in der UI, da das System auch weitergegeben wird.
 Nodes verlieren währenddessen die Verbindung und verbinden sich danach selbst neu
 (Reconnect mit wachsender Wartezeit in der Firmware).
 
+### Umsetzung (Stand 2026-11-08, erste Stufe)
+
+- Derzeit nur Schritt 4: Update über die bestehende Internetverbindung (`eth0`).
+  WLAN-Client, Bildschirmtastatur und Rückkehr in den AP-Modus folgen, sobald hostapd läuft.
+- Root-Dienst `carvos-service-mode.service` (oneshot) mit dem Skript
+  `provisioning/files/carvos-service-mode`. Er schreibt seinen Stand nach
+  `/run/carvos/service-mode` (`phase`, `message`, `invocation`), Phasen
+  `start`, `netz`, `update`, `fertig`, `fehler`, und ruft `carvos-update online` auf.
+- Die Oberfläche läuft ohne root. Die polkit-Regel `50-carvos.polkit` erlaubt der Gruppe `carvos`
+  genau das Starten dieses Dienstes, sonst nichts. Wichtig: polkit nimmt die Gruppen des
+  anfragenden Prozesses, deshalb steht `carvos` in `SupplementaryGroups` von `carvos-ui.service`.
+- In der Oberfläche: Klasse `ServiceMode` (`ui/src/servicemode.*`) startet den Dienst per
+  `systemctl start --no-block` und liest die Statusdatei, Anzeige im Vollbild `ServiceOverlay`.
+  Später wandert das in carvosd.
+- Entwicklermodus (Schalter auf der Seite System): zeigt im Overlay die Systemausgabe dieses
+  Durchlaufs live an (`journalctl -f _SYSTEMD_INVOCATION_ID=…`, also auch die Ausgabe von
+  `carvos-update`). Braucht Lesezugriff aufs Journal (Gruppe `adm` oder `systemd-journal`).
+- Das Update startet die Oberfläche neu. Die neue Instanz erkennt den laufenden Service-Modus
+  an der Statusdatei, öffnet das Overlay wieder und liest das Journal ab Beginn des Durchlaufs.
+- Oneshot-Units (Update, Service-Modus) startet `carvos-update` nie neu und prüft sie nicht.
+
 ## Build und Auslieferung
 
 ```
