@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 build/
 *.qmlproject.user
+*.qmlproject.qtds
 .claude/settings.local.json
 
 # Geheime Signaturschlüssel nie einchecken

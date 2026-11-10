@@ -43,7 +43,7 @@ Erledigte Punkte abhaken.
 - [ ] Repo öffentlich machen (vorher Historie auf Secrets prüfen)
 - [x] Release-Paket auf dem Dev-PC bauen und signieren, auf GitHub veröffentlichen (`ci/release.sh`, noch ungetestet)
 - [x] Selbst-Update des Hubs: Download, Signatur, Symlink-Umschaltung, Health-Check, Rollback (`carvos-update`)
-- [ ] minisign-Schlüssel pro Dev-PC erzeugen, `provisioning/files/minisign.d/<pc-name>.pub` einchecken
+- [x] minisign-Schlüssel pro Dev-PC erzeugen, `provisioning/files/minisign.d/<pc-name>.pub` einchecken (`noahs_pc`, `ubuntu-pc`)
 - [ ] Erstes echtes Release mit `ci/release.sh` und Test auf dem Pi
 - [x] Service-Modus-Knopf startet das Update (erste Stufe, über `eth0`), Entwicklermodus mit Systemausgabe
 - [ ] Service-Modus und Entwicklermodus auf dem echten Display testen

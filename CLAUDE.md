@@ -21,12 +21,25 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 
 ## Maschinen
 
-- **Dev-PC** (derzeit Ubuntu 26.04, x86_64, wird später wohl gewechselt): Hauptentwicklung und
-  einziger Ort, an dem gebaut wird, für Hub und Nodes. Nichts darf von genau diesem Rechner abhängen.
-  Nötige Pakete: `build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev
-  qt6-declarative-dev-tools qml6-module-qtcore podman`, für das Screenshot-Werkzeug zusätzlich PySide6.
-- **Raspberry Pi 4** (`noah@192.168.1.111`, Raspberry Pi OS Lite 64 Bit, Trixie):
-  Testgerät. `eth0` = Entwicklung/Internet, `wlan0` = Access Point des Hubs.
+- **Dev-PCs**: Nur hier wird gebaut, für Hub und Nodes. Jeder Dev-PC muss alles allein bauen
+  und veröffentlichen können, nichts darf von einem bestimmten Rechner abhängen.
+  - Haupt-PC: Windows, im Tailscale-Netz `noahs-pc`, Signaturschlüssel `noahs_pc.pub`.
+    Wie dort gebaut wird (z. B. WSL), ist hier noch nicht festgehalten.
+  - Zweit-PC: Ubuntu 26.04, x86_64, Hostname `ubuntu`, Signaturschlüssel `ubuntu-pc.pub`.
+
+  Nötige Pakete auf einem Dev-PC (Namen für Ubuntu/Debian):
+  - Bauen: `build-essential cmake ninja-build qt6-base-dev qt6-declarative-dev qt6-declarative-dev-tools`
+  - Oberfläche am PC starten: `qml6-module-qtcore qml6-module-qtquick qml6-module-qtquick-controls
+    qml6-module-qtquick-layouts qml6-module-qtquick-window qml6-module-qtquick-templates
+    qml6-module-qtquick-shapes qml6-module-qtqml-workerscript qml6-module-qtqml-models`
+  - Build für den Pi: `podman`
+  - Releases und Deploy: `git gh minisign openssh-client rsync`
+  - Screenshot-Werkzeug: `python3-pyside6.qtcore python3-pyside6.qtgui python3-pyside6.qtqml
+    python3-pyside6.qtquick python3-pyside6.qtquickcontrols2`
+  Für Releases: eigener geheimer Schlüssel `~/.minisign/carvos.key`, dazu passend
+  `provisioning/files/minisign.d/<pc-name>.pub` im Repo (siehe `docs/ARCHITEKTUR.md`).
+- **Raspberry Pi 4** (`noah@raspberrypi.local`, Raspberry Pi OS Lite 64 Bit, Trixie):
+  Testgerät, die IP-Adresse wechselt je nach Netz. `eth0` = Entwicklung/Internet, `wlan0` = Access Point des Hubs.
   Beim Umkonfigurieren von `wlan0` niemals `eth0` anfassen, sonst ist der Pi weg.
   - `/opt/carvos` ist ein Symlink auf die aktive Version unter `/data/releases/` (`carvos-update status`).
   - Oberfläche: Binärdatei `/opt/carvos/bin/carvos-ui`, gestartet von `carvos-ui.service`

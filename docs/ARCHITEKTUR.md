@@ -176,16 +176,17 @@ Nodes verlieren währenddessen die Verbindung und verbinden sich danach selbst n
 ## Build und Auslieferung
 
 ```
-Dev-PC ── baut Binärdateien für Hub und Nodes
+Dev-PCs ── bauen Binärdateien für Hub und Nodes
    └─► Release im öffentlichen GitHub-Repo
           └─► Hub lädt es im Service-Modus und aktualisiert sich selbst
 ```
 
-- Gebaut wird nur auf dem Dev-PC, nie auf dem Hub. Auf dem Hub liegen weder Repo noch
+- Gebaut wird nur auf einem Dev-PC, nie auf dem Hub. Auf dem Hub liegen weder Repo noch
   Compiler. Auf dem Testgerät läuft derzeit zusätzlich Claude Code, das gehört nicht ins Image.
-- Der Dev-PC ist austauschbar. Der Build darf deshalb nichts von diesem Rechner voraussetzen:
+- Es gibt mehrere Dev-PCs (derzeit ein Windows- und ein Ubuntu-PC, siehe `CLAUDE.md`). Jeder muss allein
+  bauen und veröffentlichen können, der Build darf nichts von einem bestimmten Rechner voraussetzen:
   Binärdateien entstehen im Container (`ci/`), die nötigen Pakete stehen in `CLAUDE.md`.
-- Die Node-Firmware wird ebenfalls auf dem Dev-PC gebaut und bis auf Weiteres per USB geflasht.
+- Die Node-Firmware wird ebenfalls auf einem Dev-PC gebaut und bis auf Weiteres per USB geflasht.
 - Binärdateien nutzen die Qt-Bibliotheken des Betriebssystems. Braucht ein Release andere
   Systempakete, kommt das als neues SD-Image, nicht über das normale Update.
 
