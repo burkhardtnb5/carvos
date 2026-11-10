@@ -24,7 +24,7 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 - **Dev-PCs**: Nur hier wird gebaut, für Hub und Nodes. Jeder Dev-PC muss alles allein bauen
   und veröffentlichen können, nichts darf von einem bestimmten Rechner abhängen.
   - Haupt-PC: Windows, im Tailscale-Netz `noahs-pc`, Signaturschlüssel `noahs_pc.pub`.
-    Wie dort gebaut wird (z. B. WSL), ist hier noch nicht festgehalten.
+    Gebaut wird dort in Ubuntu unter WSL, die Paketliste unten gilt auch dort.
   - Zweit-PC: Ubuntu 26.04, x86_64, Hostname `ubuntu`, Signaturschlüssel `ubuntu-pc.pub`.
 
   Nötige Pakete auf einem Dev-PC (Namen für Ubuntu/Debian):
