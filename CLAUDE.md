@@ -9,6 +9,8 @@ Projektname in Code, Paketen, Diensten und Topics: `carvos` (klein), in Texten C
 - Architektur und alle getroffenen Entscheidungen: `docs/ARCHITEKTUR.md` – vor
   größeren Änderungen lesen, bei Architekturänderungen dort nachtragen.
 - Aktueller Stand und nächste Schritte: `PLAN.md` – erledigte Punkte abhaken.
+- Alle Systemkomponenten und wie sie kommunizieren: `docs/systemuebersicht.html` – bei Änderungen an
+  Diensten, Regeln, Dateiorten oder Abläufen mit anpassen.
 
 ## Repo-Struktur
 

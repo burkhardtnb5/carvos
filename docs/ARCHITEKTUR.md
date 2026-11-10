@@ -141,6 +141,8 @@ der Firma in der UI, da das System auch weitergegeben wird.
 
 ## Service-Modus
 
+Die folgenden WLAN-Schritte kommen frühestens nach 1.0.0, bis dahin laufen Updates nur über Ethernet.
+
 1. Über die UI aktivieren → hostapd stoppen, NetworkManager übernimmt `wlan0` als Client.
 2. WLAN-Liste anzeigen, Netz wählen, Passwort über Bildschirmtastatur.
 3. Verbindungsprüfung von NetworkManager nutzen: Anmeldeseite (Captive Portal)
@@ -155,7 +157,7 @@ Nodes verlieren währenddessen die Verbindung und verbinden sich danach selbst n
 ### Umsetzung (Stand 2026-11-08, erste Stufe)
 
 - Derzeit nur Schritt 4: Update über die bestehende Internetverbindung (`eth0`).
-  WLAN-Client, Bildschirmtastatur und Rückkehr in den AP-Modus folgen, sobald hostapd läuft.
+  WLAN-Client, Bildschirmtastatur und Rückkehr in den AP-Modus frühestens nach 1.0.0.
 - Root-Dienst `carvos-service-mode.service` (oneshot) mit dem Skript
   `provisioning/files/carvos-service-mode`. Er schreibt seinen Stand nach
   `/run/carvos/service-mode` (`phase`, `message`, `invocation`), Phasen
@@ -191,6 +193,11 @@ Dev-PCs ── bauen Binärdateien für Hub und Nodes
   Systempakete, kommt das als neues SD-Image, nicht über das normale Update.
 
 ## Updates des Hubs
+
+- Hub-Updates sind nicht für unterwegs gedacht, sondern für zu Hause mit fester Verbindung.
+- **Entwicklungsphase (alle Versionen vor 1.0.0):** Entwickelt und getestet wird ausschließlich
+  auf dem Entwicklungs-Raspberry-Pi 4. Hub-Updates laufen in dieser Phase nur über Ethernet (`eth0`),
+  ein WLAN-Client für Updates wird dafür nicht eingerichtet.
 
 Kein `git pull` auf dem Gerät. Stattdessen:
 
@@ -232,7 +239,7 @@ Kein `git pull` auf dem Gerät. Stattdessen:
   - Das Skript aktualisiert sich selbst aus dem Release, aber erst nach erfolgreichem Health-Check.
 - Ausgelöst über `carvos-update.service` (oneshot). Der Service-Modus startet ihn später; bis dahin von Hand
   `sudo systemctl start carvos-update`. Die Schnittstelle ist nicht fest: geladen wird über die
-  Standardroute, also heute `eth0`, im Fahrzeug `wlan0` als Client im Service-Modus.
+  Standardroute. Bis 1.0.0 ist das nur `eth0`; `wlan0` als Client frühestens danach.
 - Entwicklung: `provisioning/deploy-ui.sh` packt denselben Paketaufbau und spielt ihn per
   `carvos-update install --unsigned` ein. Damit wird bei jedem Deploy auch der Update-Weg getestet.
 - Solange das Repo privat ist, braucht der Hub ein Token in `/etc/carvos/github-token`. Ziel bleibt

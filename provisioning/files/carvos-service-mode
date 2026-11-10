@@ -3,7 +3,7 @@
 # die Oberfläche startet ihn (erlaubt per polkit, siehe 50-carvos.polkit).
 #
 # Derzeit: Update über die bestehende Internetverbindung (eth0).
-# Später (docs/ARCHITEKTUR.md, „Service-Modus“): hostapd stoppen, wlan0 als Client,
+# Frühestens nach 1.0.0 (docs/ARCHITEKTUR.md, „Service-Modus“): hostapd stoppen, wlan0 als Client,
 # WLAN-Auswahl in der Oberfläche, danach zurück in den AP-Modus.
 #
 # Den Fortschritt liest die Oberfläche aus /run/carvos/service-mode (phase, message,

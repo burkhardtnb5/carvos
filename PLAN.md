@@ -39,7 +39,7 @@ Erledigte Punkte abhaken.
 - [ ] Grauwasserventil + Kamera-Stream in der UI
 
 ## Phase 4 – Service-Modus und Updates
-- [ ] Service-Modus vollständig (WLAN-Suche, Bildschirmtastatur, Captive-Portal-Hinweis, Timeout)
+- [ ] Nicht vor 1.0.0: Service-Modus mit WLAN-Suche, Bildschirmtastatur, Captive-Portal-Hinweis, Timeout (bis dahin Updates nur über Ethernet, siehe `docs/ARCHITEKTUR.md`)
 - [ ] Repo öffentlich machen (vorher Historie auf Secrets prüfen)
 - [x] Release-Paket auf dem Dev-PC bauen und signieren, auf GitHub veröffentlichen (`ci/release.sh`, noch ungetestet)
 - [x] Selbst-Update des Hubs: Download, Signatur, Symlink-Umschaltung, Health-Check, Rollback (`carvos-update`)

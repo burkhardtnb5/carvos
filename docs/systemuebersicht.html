@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CARVOS Systemübersicht</title>
+<style>
+  :root {
+    --bg: #F1F2F4;
+    --surface: #FFFFFF;
+    --surface-2: #E6E8EB;
+    --border: #C7CBD0;
+    --text: #1B1D20;
+    --muted: #555B62;
+    --accent: #C4252A;
+    --planned: #7A8088;
+    --external: #2F6DB5;
+    --code-bg: #E6E8EB;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17191C;
+      --surface: #25282C;
+      --surface-2: #32363B;
+      --border: #464B52;
+      --text: #F1F3F5;
+      --muted: #A9AFB6;
+      --accent: #E5484D;
+      --planned: #8A9099;
+      --external: #6FA8E8;
+      --code-bg: #32363B;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17191C;
+    --surface: #25282C;
+    --surface-2: #32363B;
+    --border: #464B52;
+    --text: #F1F3F5;
+    --muted: #A9AFB6;
+    --accent: #E5484D;
+    --planned: #8A9099;
+    --external: #6FA8E8;
+    --code-bg: #32363B;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", "Noto Sans", sans-serif;
+  }
+  main { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+  header { border-left: 6px solid var(--accent); padding-left: 16px; margin-bottom: 32px; }
+  h1 { font-size: 30px; margin: 0 0 4px; letter-spacing: 0.5px; }
+  h2 { font-size: 22px; margin: 48px 0 12px; padding-top: 8px; border-top: 1px solid var(--border); }
+  h3 { font-size: 18px; margin: 28px 0 8px; }
+  p, li { max-width: 78ch; }
+  .lead { color: var(--muted); margin: 0; }
+  code {
+    font: 0.9em/1.4 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    background: var(--code-bg);
+    padding: 1px 5px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+  }
+  nav ol { columns: 2; column-gap: 32px; padding-left: 20px; }
+  nav a { color: var(--text); }
+  @media (max-width: 640px) { nav ol { columns: 1; } }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 12px 0 20px; color: var(--muted); font-size: 14px; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 22px; height: 12px; margin-right: 6px;
+    vertical-align: -1px; border-radius: 3px; border: 2px solid var(--text);
+  }
+  .legend .l-planned::before { border-style: dashed; border-color: var(--planned); }
+  .legend .l-external::before { border-color: var(--external); }
+  .legend .l-data::before { background: var(--surface-2); border-color: var(--border); }
+  figure { margin: 16px 0 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; }
+  .table-wrap { overflow-x: auto; margin: 12px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: left; vertical-align: top; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface-2); font-weight: 600; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .tag { display: inline-block; font-size: 12px; padding: 0 7px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); white-space: nowrap; }
+  .tag.planned { border-style: dashed; }
+  .tag.root { border-color: var(--accent); color: var(--accent); }
+  .note { border-left: 4px solid var(--border); padding: 4px 14px; color: var(--muted); }
+  pre {
+    font: 13.5px/1.5 ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px 16px; overflow-x: auto;
+  }
+
+  /* Diagramme */
+  .box { fill: var(--surface-2); stroke: var(--text); stroke-width: 1.5; }
+  .box.planned { fill: none; stroke: var(--planned); stroke-dasharray: 6 4; }
+  .box.external { fill: none; stroke: var(--external); stroke-width: 2; }
+  .box.data { fill: var(--bg); stroke: var(--border); }
+  .t { fill: var(--text); font: 600 14px system-ui, "Noto Sans", sans-serif; }
+  .s { fill: var(--muted); font: 12px system-ui, "Noto Sans", sans-serif; }
+  .t.planned, .s.planned { fill: var(--planned); }
+  .lbl { fill: var(--muted); font: 11.5px system-ui, "Noto Sans", sans-serif; }
+  .arr { stroke: var(--text); stroke-width: 1.5; fill: none; marker-end: url(#pfeil); }
+  .arr.planned { stroke: var(--planned); stroke-dasharray: 5 4; marker-end: url(#pfeil-geplant); }
+  .arr.ext { stroke: var(--external); marker-end: url(#pfeil-extern); }
+  .arr.a2 { marker-end: url(#pfeil-2); }
+  .arr.ext.a2 { marker-end: url(#pfeil-extern-2); }
+  .head { fill: var(--text); }
+  .head.planned { fill: var(--planned); }
+  .head.ext { fill: var(--external); }
+</style>
+</head>
+<body>
+<main>
+
+<header>
+  <h1>CARVOS Systemübersicht</h1>
+  <p class="lead">Alle Komponenten von Hub, Dev-PC und Release-Weg, und wie sie miteinander reden.
+  Stand 2026-11-10, aktuelles Release v0.1.0. Bei Änderungen an Diensten, Regeln oder Abläufen diese Datei mitpflegen.</p>
+</header>
+
+<nav>
+  <ol>
+    <li><a href="#ueberblick">Überblick</a></li>
+    <li><a href="#hub">Hub zur Laufzeit</a></li>
+    <li><a href="#komponenten">Komponenten auf dem Hub</a></li>
+    <li><a href="#kommunikation">Kommunikationswege</a></li>
+    <li><a href="#dateien">Dateien und Orte auf dem Hub</a></li>
+    <li><a href="#rechte">Benutzer und Rechte</a></li>
+    <li><a href="#ablaeufe">Abläufe</a></li>
+    <li><a href="#devpc">Dev-PC, Build und Release</a></li>
+    <li><a href="#einrichtung">Einrichtungsskripte</a></li>
+    <li><a href="#geplant">Geplante Komponenten</a></li>
+  </ol>
+</nav>
+
+<h2 id="ueberblick">1. Überblick</h2>
+<p>CARVOS besteht aus drei Orten:</p>
+<ul>
+  <li><strong>Dev-PCs</strong> (Windows mit Ubuntu unter WSL, und ein Ubuntu-PC): bauen alle Binärdateien und veröffentlichen Releases. Nur hier wird kompiliert.</li>
+  <li><strong>GitHub</strong> (öffentliches Repo <code>burkhardtnb5/carvos</code>): Quellcode und signierte Release-Pakete.</li>
+  <li><strong>Hub</strong> (Raspberry Pi, derzeit nur der Entwicklungs-Pi 4): zeigt die Oberfläche an und aktualisiert sich selbst. Er hat weder Repo noch Compiler.</li>
+</ul>
+<p>Bis Version 1.0.0 wird ausschließlich auf dem Entwicklungs-Pi 4 entwickelt und getestet. Hub-Updates laufen in dieser Phase nur über Ethernet (<code>eth0</code>).
+Nodes (ESP8266), MQTT, Access Point und <code>carvosd</code> sind geplant, aber noch nicht gebaut. Sie stehen in den Diagrammen gestrichelt.</p>
+
+<h2 id="hub">2. Hub zur Laufzeit</h2>
+<div class="legend">
+  <span>vorhanden</span>
+  <span class="l-planned">geplant</span>
+  <span class="l-external">extern</span>
+  <span class="l-data">Datei oder Ordner</span>
+</div>
+<figure>
+<svg viewBox="0 0 1000 640" role="img" aria-labelledby="hub-titel">
+  <title id="hub-titel">Komponenten des Hubs und ihre Verbindungen</title>
+  <defs>
+    <marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0 L10 5 L0 10 Z"/></marker>
+    <marker id="pfeil-geplant" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head planned" d="M0 0 L10 5 L0 10 Z"/></marker>
+    <marker id="pfeil-extern" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head ext" d="M0 0 L10 5 L0 10 Z"/></marker>
+  </defs>
+
+  <!-- Hardware -->
+  <rect class="box" x="20" y="40" width="190" height="56" rx="8"/>
+  <text class="t" x="34" y="63">HDMI-Display</text>
+  <text class="s" x="34" y="82">DRM/KMS, 1024×600</text>
+
+  <rect class="box" x="20" y="116" width="190" height="56" rx="8"/>
+  <text class="t" x="34" y="139">Touchscreen</text>
+  <text class="s" x="34" y="158">USB, /dev/input</text>
+
+  <rect class="box" x="20" y="236" width="190" height="70" rx="8"/>
+  <text class="t" x="34" y="259">udev</text>
+  <text class="s" x="34" y="278">99-carvos-display.rules</text>
+  <text class="s" x="34" y="294">→ display-hotplug.sh</text>
+
+  <!-- Oberfläche -->
+  <rect class="box" x="290" y="40" width="240" height="132" rx="8"/>
+  <text class="t" x="304" y="63">carvos-ui</text>
+  <text class="s" x="304" y="84">carvos-ui.service · Benutzer noah</text>
+  <text class="s" x="304" y="102">Qt Quick, Vollbild über eglfs</text>
+  <text class="s" x="304" y="120">C++-Klasse ServiceMode</text>
+  <text class="s" x="304" y="138">Einstellungen: ~/.config/CARVOS</text>
+  <text class="s" x="304" y="156">liest /opt/carvos/VERSION</text>
+
+  <!-- systemd -->
+  <rect class="box" x="620" y="40" width="170" height="70" rx="8"/>
+  <text class="t" x="634" y="63">systemd</text>
+  <text class="s" x="634" y="82">prüft per polkit</text>
+  <text class="s" x="634" y="98">(50-carvos.rules)</text>
+
+  <!-- Service-Modus und Update -->
+  <rect class="box" x="620" y="180" width="170" height="70" rx="8"/>
+  <text class="t" x="634" y="203">carvos-service-mode</text>
+  <text class="s" x="634" y="222">oneshot · root</text>
+  <text class="s" x="634" y="238">prüft Netz, ruft Update</text>
+
+  <rect class="box" x="620" y="300" width="170" height="70" rx="8"/>
+  <text class="t" x="634" y="323">carvos-update</text>
+  <text class="s" x="634" y="342">/usr/local/sbin · root</text>
+  <text class="s" x="634" y="358">Signatur, Umschalten</text>
+
+  <rect class="box external" x="830" y="300" width="150" height="70" rx="8"/>
+  <text class="t" x="844" y="323">GitHub Releases</text>
+  <text class="s" x="844" y="342">api.github.com</text>
+  <text class="s" x="844" y="358">nur über eth0</text>
+
+  <!-- Statusdatei und Journal -->
+  <rect class="box data" x="290" y="236" width="115" height="70" rx="8"/>
+  <text class="t" x="302" y="259">Journal</text>
+  <text class="s" x="302" y="277">journalctl</text>
+  <text class="s" x="302" y="293">Entwicklermodus</text>
+
+  <rect class="box data" x="415" y="236" width="115" height="70" rx="8"/>
+  <text class="t" x="427" y="259">Statusdatei</text>
+  <text class="s" x="427" y="277">/run/carvos/</text>
+  <text class="s" x="427" y="293">service-mode</text>
+
+  <!-- Unten -->
+  <rect class="box" x="20" y="420" width="190" height="70" rx="8"/>
+  <text class="t" x="34" y="443">carvos-update-boot</text>
+  <text class="s" x="34" y="462">beim Start, nur wenn</text>
+  <text class="s" x="34" y="478">ein Update offen ist</text>
+
+  <rect class="box data" x="290" y="420" width="240" height="70" rx="8"/>
+  <text class="t" x="304" y="443">/data</text>
+  <text class="s" x="304" y="462">releases/&lt;version&gt; · current</text>
+  <text class="s" x="304" y="478">state/ (pending, previous, bad)</text>
+
+  <rect class="box data" x="620" y="420" width="170" height="70" rx="8"/>
+  <text class="t" x="634" y="443">/etc</text>
+  <text class="s" x="634" y="462">Units · udev · polkit</text>
+  <text class="s" x="634" y="478">carvos/minisign.d</text>
+
+  <!-- Geplant -->
+  <rect class="box planned" x="20" y="550" width="190" height="70" rx="8"/>
+  <text class="t planned" x="34" y="573">ESP-Nodes</text>
+  <text class="s planned" x="34" y="592">Gaswaage, Ventil, Kamera</text>
+  <text class="s planned" x="34" y="608">WLAN des Hubs (hostapd)</text>
+
+  <rect class="box planned" x="290" y="550" width="240" height="70" rx="8"/>
+  <text class="t planned" x="304" y="573">mosquitto</text>
+  <text class="s planned" x="304" y="592">MQTT-Broker</text>
+  <text class="s planned" x="304" y="608">carvos/&lt;node&gt;/state · set · status</text>
+
+  <rect class="box planned" x="620" y="550" width="170" height="70" rx="8"/>
+  <text class="t planned" x="634" y="573">carvosd</text>
+  <text class="s planned" x="634" y="592">Logik, Alarme, Pairing</text>
+  <text class="s planned" x="634" y="608">Verlauf in SQLite (/data)</text>
+
+  <!-- Pfeile: Hardware -->
+  <line class="arr" x1="290" y1="68" x2="212" y2="68"/>
+  <text class="lbl" x="226" y="61">Bild</text>
+  <line class="arr" x1="210" y1="144" x2="288" y2="144"/>
+  <text class="lbl" x="218" y="137">Eingaben</text>
+  <line class="arr" x1="210" y1="262" x2="288" y2="168"/>
+  <text class="lbl" x="230" y="254">start/stop</text>
+
+  <!-- Pfeile: Service-Modus -->
+  <line class="arr" x1="530" y1="75" x2="618" y2="75"/>
+  <text class="lbl" x="542" y="67">Start-Auftrag</text>
+  <line class="arr" x1="705" y1="110" x2="705" y2="178"/>
+  <text class="lbl" x="712" y="150">startet</text>
+  <line class="arr" x1="620" y1="215" x2="532" y2="258"/>
+  <text class="lbl" x="560" y="222">schreibt</text>
+  <line class="arr" x1="472" y1="236" x2="472" y2="174"/>
+  <text class="lbl" x="478" y="212">liest 1×/s</text>
+  <line class="arr" x1="347" y1="236" x2="347" y2="174"/>
+  <text class="lbl" x="353" y="212">liest mit</text>
+  <line class="arr" x1="705" y1="250" x2="705" y2="298"/>
+  <text class="lbl" x="712" y="280">online</text>
+  <line class="arr ext" x1="790" y1="335" x2="828" y2="335"/>
+  <text class="lbl" x="792" y="327">HTTPS</text>
+  <line class="arr" x1="620" y1="345" x2="360" y2="308"/>
+  <text class="lbl" x="470" y="346">Ausgabe ins Journal</text>
+
+  <!-- Pfeile: Dateien -->
+  <line class="arr" x1="645" y1="370" x2="502" y2="418"/>
+  <text class="lbl" x="410" y="400">entpackt, schaltet um</text>
+  <line class="arr" x1="740" y1="370" x2="740" y2="418"/>
+  <text class="lbl" x="746" y="400">installiert</text>
+  <line class="arr" x1="210" y1="455" x2="288" y2="455"/>
+  <text class="lbl" x="218" y="447">boot-check</text>
+
+  <!-- Pfeile: geplant -->
+  <line class="arr planned" x1="210" y1="585" x2="288" y2="585"/>
+  <line class="arr planned" x1="288" y1="597" x2="212" y2="597"/>
+  <text class="lbl" x="226" y="577">MQTT</text>
+  <line class="arr planned" x1="530" y1="585" x2="618" y2="585"/>
+  <line class="arr planned" x1="618" y1="597" x2="532" y2="597"/>
+  <text class="lbl" x="560" y="577">MQTT</text>
+</svg>
+<figcaption>Gestartet wird alles von systemd. Die Oberfläche hat keine Root-Rechte: Sie darf über polkit nur den Service-Modus starten und liest dessen Stand aus der Statusdatei.
+Wie <code>carvosd</code> und Oberfläche später miteinander reden, ist noch nicht festgelegt.</figcaption>
+</figure>
+
+<h2 id="komponenten">3. Komponenten auf dem Hub</h2>
+
+<h3>systemd-Units</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Unit</th><th>Art</th><th>Läuft als</th><th>Gestartet durch</th><th>Aufgabe</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><code>carvos-ui.service</code></td>
+      <td>Dauerdienst, <code>Restart=always</code> nach 2 s</td>
+      <td><code>noah</code>, Gruppen <code>video render input carvos</code></td>
+      <td>Boot (<code>multi-user.target</code>), udev beim Einstecken, <code>carvos-update</code> nach dem Umschalten</td>
+      <td>Startet <code>/opt/carvos/bin/carvos-ui</code> im Vollbild über eglfs. <code>ExecCondition</code> verhindert den Start ohne Bildschirm. Schaltet die Textkonsole <code>getty@tty1</code> ab (<code>Conflicts=</code>).</td>
+    </tr>
+    <tr>
+      <td><code>carvos-service-mode.service</code></td>
+      <td>oneshot, bis 20 min</td>
+      <td><span class="tag root">root</span></td>
+      <td>Oberfläche (Knopf „Service-Modus“) über polkit, von Hand <code>systemctl start</code></td>
+      <td>Prüft die Internetverbindung, ruft <code>carvos-update online</code> auf, schreibt den Fortschritt nach <code>/run/carvos/service-mode</code>. Legt <code>/run/carvos</code> an und behält es nach dem Ende.</td>
+    </tr>
+    <tr>
+      <td><code>carvos-update.service</code></td>
+      <td>oneshot, bis 20 min</td>
+      <td><span class="tag root">root</span></td>
+      <td>von Hand: <code>sudo systemctl start carvos-update</code></td>
+      <td>Führt <code>carvos-update online</code> ohne Oberfläche aus. Wartet auf Netz und Uhrzeit (<code>network-online.target</code>, <code>time-sync.target</code>).</td>
+    </tr>
+    <tr>
+      <td><code>carvos-update-boot.service</code></td>
+      <td>oneshot</td>
+      <td><span class="tag root">root</span></td>
+      <td>Boot, nur wenn <code>/data/state/pending</code> existiert, nach <code>carvos-ui</code></td>
+      <td>Prüft nach einem abgebrochenen Update (z. B. Stromausfall), ob die neue Version gesund ist. Sonst Rücksprung auf die vorige.</td>
+    </tr>
+  </tbody>
+</table></div>
+
+<h3>Programme und Skripte</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Programm</th><th>Ort auf dem Hub</th><th>Quelle im Repo</th><th>Aufgabe</th></tr></thead>
+  <tbody>
+    <tr><td><code>carvos-ui</code></td><td><code>/opt/carvos/bin/</code></td><td><code>ui/</code> (C++ und QML, einkompiliert)</td>
+      <td>Touch-Oberfläche mit vier Seiten, Hell-/Dunkelmodus, Entwicklermodus, Service-Modus-Anzeige. Mit <code>--dev ORDNER</code> lädt sie QML aus dem Quellordner neu (nur am PC).</td></tr>
+    <tr><td><code>carvos-update</code></td><td><code>/usr/local/sbin/</code></td><td><code>provisioning/files/carvos-update</code></td>
+      <td>Befehle <code>online</code>, <code>install</code>, <code>rollback</code>, <code>boot-check</code>, <code>status</code>. Eine Sperre (<code>/run/carvos-update.lock</code>) verhindert parallele Läufe. Aktualisiert sich nach einem erfolgreichen Update selbst.</td></tr>
+    <tr><td><code>carvos-service-mode</code></td><td><code>/opt/carvos/provisioning/files/</code> (gehört zur Version)</td><td><code>provisioning/files/carvos-service-mode</code></td>
+      <td>Ablauf des Service-Modus mit den Phasen <code>start</code>, <code>netz</code>, <code>update</code>, <code>fertig</code>, <code>fehler</code>.</td></tr>
+    <tr><td><code>display-connected.sh</code></td><td><code>/opt/carvos/provisioning/files/</code></td><td>gleichnamig</td>
+      <td>Liest <code>/sys/class/drm/card*-*/status</code>. Exit 0, wenn ein Bildschirm steckt. Dient als <code>ExecCondition</code>.</td></tr>
+    <tr><td><code>display-hotplug.sh</code></td><td><code>/opt/carvos/provisioning/files/</code></td><td>gleichnamig</td>
+      <td>Von udev aufgerufen. Startet oder stoppt <code>carvos-ui.service</code> mit <code>--no-block</code>.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Regeln und Konfiguration</h3>
+<div class="table-wrap"><table>
+  <thead><tr><th>Datei</th><th>Installiert nach</th><th>Inhalt</th></tr></thead>
+  <tbody>
+    <tr><td><code>99-carvos-display.rules</code></td><td><code>/etc/udev/rules.d/</code></td><td>Bei <code>add</code>/<code>change</code> an <code>drm</code>-Geräten <code>display-hotplug.sh</code> ausführen.</td></tr>
+    <tr><td><code>50-carvos.polkit</code></td><td><code>/etc/polkit-1/rules.d/50-carvos.rules</code></td><td>Gruppe <code>carvos</code> darf genau eins: <code>carvos-service-mode.service</code> starten. Kein Stoppen, keine anderen Units.</td></tr>
+    <tr><td><code>update.conf</code></td><td><code>/etc/carvos/</code></td><td>Repo, Paketname <code>carvos-hub-arm64.tar.gz</code>, Schlüsselordner, optionales Token, <code>/data</code>, 3 behaltene Versionen, 30 s Health-Check.</td></tr>
+    <tr><td><code>minisign.d/*.pub</code></td><td><code>/etc/carvos/minisign.d/</code></td><td>Öffentliche Schlüssel der Dev-PCs (<code>noahs_pc</code>, <code>ubuntu-pc</code>). Kommt mit jedem Release und wird nach erfolgreichem Update übernommen.</td></tr>
+    <tr><td><code>eglfs-kms.json</code></td><td>bleibt in <code>/opt/carvos/provisioning/files/</code></td><td>Grafikgerät über <code>/dev/dri/by-path/platform-gpu-card</code>, weil <code>card0</code> und <code>card1</code> beim Booten die Nummer tauschen können.</td></tr>
+    <tr><td><code>config.txt</code>, <code>cmdline.txt</code></td><td><code>/boot/firmware/</code> (Originale als <code>.orig</code>)</td><td>Stiller Boot: <code>disable_splash=1</code>, <code>console=tty3</code>, <code>quiet</code>, <code>loglevel=3</code>, <code>logo.nologo</code>, <code>vt.global_cursor_default=0</code> und gedämpfte Ausgaben von systemd und udev.</td></tr>
+    <tr><td><code>carvos-ui.conf</code></td><td><code>~noah/.config/CARVOS/</code></td><td>Von der Oberfläche geschrieben (Qt <code>Settings</code>): <code>darkMode</code>, <code>developerMode</code>.</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Genutzte Systemdienste</h3>
+<p>systemd und journald, udev, polkit, NetworkManager (DHCP auf <code>eth0</code>), Zeitsynchronisation (<code>time-sync.target</code>, nötig für HTTPS, weil der Pi noch keine RTC hat), die Grafiktreiber <code>vc4</code>/<code>v3d</code> (KMS) und libinput.</p>
+
+<h2 id="kommunikation">4. Kommunikationswege</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Von</th><th>Nach</th><th>Weg</th><th>Was und mit welchen Rechten</th></tr></thead>
+  <tbody>
+    <tr><td><code>carvos-ui</code></td><td>Display</td><td>DRM/KMS über eglfs</td><td>Zeichnet direkt per GPU, ohne Desktop. Braucht die Gruppen <code>video</code> und <code>render</code>.</td></tr>
+    <tr><td>Touchscreen</td><td><code>carvos-ui</code></td><td>evdev/libinput, <code>/dev/input/event*</code></td><td>Gruppe <code>input</code>.</td></tr>
+    <tr><td>Kernel (DRM-Hotplug)</td><td>udev → <code>display-hotplug.sh</code></td><td>udev-Regel</td><td>Bei jeder Änderung am Grafikanschluss.</td></tr>
+    <tr><td><code>display-hotplug.sh</code></td><td>systemd</td><td><code>systemctl start|stop --no-block carvos-ui.service</code></td><td>Läuft als root im Rahmen von udev.</td></tr>
+    <tr><td>systemd</td><td><code>display-connected.sh</code></td><td><code>ExecCondition</code></td><td>Exit 1 heißt Start überspringen, ohne Fehler und ohne Neustart-Schleife.</td></tr>
+    <tr><td><code>carvos-ui</code> (ServiceMode)</td><td>systemd</td><td><code>systemctl start --no-block carvos-service-mode.service</code> über D-Bus</td><td>polkit erlaubt es, weil der Prozess in der Gruppe <code>carvos</code> ist (<code>SupplementaryGroups</code>).</td></tr>
+    <tr><td><code>carvos-service-mode</code></td><td><code>carvos-ui</code></td><td>Datei <code>/run/carvos/service-mode</code></td><td>Zeilen <code>phase=</code>, <code>message=</code>, <code>invocation=</code>. Wird atomar ersetzt (<code>mv</code>). Die Oberfläche liest jede Sekunde, solange der Modus läuft, und nach ihrem eigenen Start einmal.</td></tr>
+    <tr><td><code>carvos-service-mode</code>, <code>carvos-update</code></td><td><code>carvos-ui</code> (Entwicklermodus)</td><td><code>journalctl --follow _SYSTEMD_INVOCATION_ID=…</code></td><td>Genau dieser Durchlauf, höchstens 500 Zeilen. Braucht die Gruppe <code>systemd-journal</code> oder <code>adm</code>.</td></tr>
+    <tr><td><code>carvos-service-mode</code></td><td><code>carvos-update</code></td><td>Programmaufruf <code>carvos-update online</code></td><td>root. Vorher Test, ob <code>api.github.com</code> erreichbar ist.</td></tr>
+    <tr><td><code>carvos-update</code></td><td>GitHub</td><td>HTTPS (curl)</td><td><code>releases/latest</code>, danach Paket und <code>.minisig</code>. Über die Standardroute, bis 1.0.0 nur <code>eth0</code>. Ein Token wird nur genutzt, wenn <code>/etc/carvos/github-token</code> existiert (heute nicht mehr nötig, das Repo ist öffentlich).</td></tr>
+    <tr><td><code>carvos-update</code></td><td><code>/data</code></td><td>Dateisystem</td><td>Entpacken nach <code>releases/&lt;version&gt;</code>, atomares Umschalten von <code>current</code> per <code>rename()</code>, Zustand in <code>state/</code>.</td></tr>
+    <tr><td><code>carvos-update</code></td><td>systemd, udev, polkit</td><td>Dateien in <code>/etc</code>, <code>daemon-reload</code>, <code>udevadm control --reload</code>, <code>enable</code>/<code>restart</code></td><td>Installiert die Units und Regeln der neuen Version und entfernt die, die nur die alte hatte. Oneshot-Units werden nicht neu gestartet.</td></tr>
+    <tr><td><code>carvos-update</code></td><td>systemd</td><td><code>systemctl show</code> (ActiveState, Result, NRestarts)</td><td>Health-Check nach 30 s: Jeder Dauerdienst läuft ohne Neustart oder wurde per <code>ExecCondition</code> übersprungen.</td></tr>
+    <tr><td><code>carvos-update-boot</code></td><td><code>carvos-update boot-check</code></td><td>Programmaufruf beim Start</td><td>Nur, wenn <code>/data/state/pending</code> liegen geblieben ist.</td></tr>
+    <tr><td><code>carvos-ui</code></td><td><code>/opt/carvos/VERSION</code></td><td>Datei lesen</td><td>Anzeige der Version auf der Seite „System“.</td></tr>
+    <tr><td><code>carvos-ui</code></td><td><code>~/.config/CARVOS/carvos-ui.conf</code></td><td>Qt <code>Settings</code></td><td>Hell-/Dunkelmodus und Entwicklermodus.</td></tr>
+    <tr><td>Dev-PC</td><td>Hub</td><td>SSH (<code>ssh</code>, <code>scp</code>, <code>rsync</code>)</td><td><code>deploy-ui.sh</code> kopiert ein Paket nach <code>/tmp</code> und ruft <code>sudo carvos-update install --unsigned</code> auf. Beim ersten Mal richtet es <code>carvos-update</code> ein.</td></tr>
+    <tr><td>Dev-PC</td><td>GitHub</td><td><code>git push</code>, <code>gh release create</code></td><td><code>ci/release.sh</code> legt den Tag <code>vX.Y.Z</code> an und lädt Paket und Signatur hoch.</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="dateien">5. Dateien und Orte auf dem Hub</h2>
+<pre>/opt/carvos ─────────────► /data/current ─────► /data/releases/&lt;version&gt;/
+                                                  ├── VERSION
+                                                  ├── bin/carvos-ui
+                                                  └── provisioning/          (Skripte, Units, Regeln, Schlüssel)
+/data/state/
+  ├── pending          Update läuft oder wurde unterbrochen (Version)
+  ├── previous         vorige Version für Rollback
+  ├── bad              als fehlerhaft markierte Versionen (werden nicht erneut geladen)
+  └── installed-files  von carvos-update installierte Dateien in /etc
+/etc/carvos/
+  ├── update.conf
+  ├── minisign.d/*.pub
+  └── github-token     nur nötig, solange ein Repo privat ist (optional)
+/etc/systemd/system/carvos-*.service
+/etc/udev/rules.d/99-carvos-display.rules
+/etc/polkit-1/rules.d/50-carvos.rules
+/usr/local/sbin/carvos-update
+/run/carvos/service-mode           Stand des Service-Modus (im RAM)
+/run/carvos-update.lock            Sperre gegen parallele Updates
+/boot/firmware/config.txt, cmdline.txt (+ .orig)
+~noah/.config/CARVOS/carvos-ui.conf</pre>
+<p class="note">Units und Regeln verweisen immer auf <code>/opt/carvos/…</code>. Für ein Update reicht es deshalb, den Symlink <code>/data/current</code> umzuschalten.</p>
+
+<h2 id="rechte">6. Benutzer und Rechte</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Wer</th><th>Rechte</th><th>Wofür</th></tr></thead>
+  <tbody>
+    <tr><td><span class="tag root">root</span></td><td>alles</td><td><code>carvos-update</code>, <code>carvos-service-mode</code>, <code>carvos-update-boot</code>, udev-Skripte</td></tr>
+    <tr><td><code>noah</code> (Oberfläche)</td><td>Gruppen <code>video</code>, <code>render</code>, <code>input</code> (Grafik, Touch), <code>carvos</code> (Service-Modus starten), <code>systemd-journal</code> (Systemausgabe lesen)</td><td><code>carvos-ui</code></td></tr>
+    <tr><td>Gruppe <code>carvos</code></td><td>per polkit nur <code>start</code> von <code>carvos-service-mode.service</code></td><td>Die Oberfläche löst Updates aus, ohne selbst root zu sein</td></tr>
+  </tbody>
+</table></div>
+<p class="note">Geplant ist ein eigener Standardbenutzer <code>carvos</code> ohne <code>sudo</code>, unter dem die Dienste laufen. Auf dem Testgerät ist <code>noah</code> noch zusätzlich in der <code>sudo</code>-Gruppe.</p>
+
+<h2 id="ablaeufe">7. Abläufe</h2>
+
+<h3>Einschalten</h3>
+<ol>
+  <li>Die Firmware startet ohne Regenbogenbild, der Kernel ohne sichtbare Meldungen (<code>console=tty3</code>).</li>
+  <li>systemd startet <code>carvos-ui.service</code>. <code>display-connected.sh</code> prüft den Bildschirm; ohne Bildschirm wird der Start übersprungen.</li>
+  <li>Die Oberfläche öffnet das Grafikgerät über <code>eglfs-kms.json</code>, lädt die Einstellungen und liest einmal <code>/run/carvos/service-mode</code>.</li>
+  <li>Falls ein Update unterbrochen wurde, prüft <code>carvos-update-boot.service</code> danach die Version und springt bei Bedarf zurück.</li>
+</ol>
+
+<h3>Bildschirm einstecken oder abziehen</h3>
+<ol>
+  <li>Der Kernel meldet eine Änderung am DRM-Gerät, udev ruft <code>display-hotplug.sh</code> auf.</li>
+  <li>Eingesteckt: <code>systemctl start carvos-ui</code>. Abgezogen: <code>systemctl stop carvos-ui</code>. Nach erneutem Einstecken startet die Oberfläche frisch.</li>
+</ol>
+
+<h3>Update über den Service-Modus</h3>
+<ol>
+  <li>Knopf „Service-Modus“ auf der Seite System. Die Oberfläche startet <code>carvos-service-mode.service</code> (polkit) und zeigt ein Vollbild mit dem Stand.</li>
+  <li>Der Dienst prüft, ob GitHub erreichbar ist. Ohne Netz: „Netzwerkkabel anschließen und erneut versuchen“.</li>
+  <li><code>carvos-update online</code> wartet auf die Uhrzeit, fragt <code>releases/latest</code> ab und lädt nur, wenn die Version neuer und nicht als fehlerhaft markiert ist.</li>
+  <li>Die Signatur muss zu einem Schlüssel in <code>/etc/carvos/minisign.d</code> passen. Danach entpacken, <code>state/pending</code> setzen, <code>current</code> umschalten.</li>
+  <li>Units, udev- und polkit-Regeln der neuen Version installieren, Dauerdienste neu starten. Dabei startet auch die Oberfläche neu und öffnet die Service-Anzeige wieder.</li>
+  <li>Health-Check nach 30 s. Gesund: Pending löschen, alte Versionen aufräumen (3 behalten), Schlüsselliste übernehmen, <code>carvos-update</code> selbst aktualisieren. Nicht gesund: Rücksprung, Version als fehlerhaft markieren.</li>
+  <li>Der Service-Modus schreibt <code>fertig</code> oder <code>fehler</code>. Die Anzeige bleibt stehen, bis sie geschlossen wird.</li>
+</ol>
+
+<h3>Stromausfall während des Updates</h3>
+<p><code>/data/state/pending</code> bleibt liegen. Beim nächsten Start führt <code>carvos-update-boot.service</code> den Health-Check aus und behält die neue Version oder springt zurück.</p>
+
+<h3>Rollback von Hand</h3>
+<p><code>sudo carvos-update rollback</code> tauscht aktive und vorige Version. Ein zweiter Aufruf springt wieder vor. <code>carvos-update status</code> zeigt alle Versionen.</p>
+
+<h2 id="devpc">8. Dev-PC, Build und Release</h2>
+<figure>
+<svg viewBox="0 0 1000 290" role="img" aria-labelledby="dev-titel">
+  <title id="dev-titel">Vom Quellcode zum Hub</title>
+  <defs>
+    <marker id="pfeil-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head" d="M0 0 L10 5 L0 10 Z"/></marker>
+    <marker id="pfeil-extern-2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="head ext" d="M0 0 L10 5 L0 10 Z"/></marker>
+  </defs>
+  <rect class="box" x="20" y="40" width="160" height="70" rx="8"/>
+  <text class="t" x="34" y="63">Repo</text>
+  <text class="s" x="34" y="82">ui/, provisioning/, ci/</text>
+  <text class="s" x="34" y="98">auf einem Dev-PC</text>
+
+  <rect class="box" x="220" y="40" width="190" height="70" rx="8"/>
+  <text class="t" x="234" y="63">ci/build-arm64.sh</text>
+  <text class="s" x="234" y="82">Podman, Debian Trixie</text>
+  <text class="s" x="234" y="98">Qt 6.8 wie auf dem Pi</text>
+
+  <rect class="box" x="450" y="40" width="180" height="70" rx="8"/>
+  <text class="t" x="464" y="63">ci/package-hub.sh</text>
+  <text class="s" x="464" y="82">carvos-hub-arm64.tar.gz</text>
+  <text class="s" x="464" y="98">VERSION, bin/, provisioning/</text>
+
+  <rect class="box" x="670" y="40" width="150" height="70" rx="8"/>
+  <text class="t" x="684" y="63">deploy-ui.sh</text>
+  <text class="s" x="684" y="82">SSH, ohne Signatur</text>
+  <text class="s" x="684" y="98">Entwicklungsstand</text>
+
+  <rect class="box" x="850" y="40" width="130" height="200" rx="8"/>
+  <text class="t" x="864" y="63">Hub</text>
+  <text class="s" x="864" y="82">Entwicklungs-Pi 4</text>
+  <text class="s" x="864" y="110">install</text>
+  <text class="s" x="864" y="126">--unsigned</text>
+  <text class="s" x="864" y="200">online</text>
+  <text class="s" x="864" y="216">(eth0)</text>
+
+  <rect class="box" x="20" y="170" width="160" height="70" rx="8"/>
+  <text class="t" x="34" y="193">PC-Build</text>
+  <text class="s" x="34" y="212">cmake, Fenster</text>
+  <text class="s" x="34" y="228">--dev lädt QML neu</text>
+
+  <rect class="box" x="450" y="170" width="180" height="70" rx="8"/>
+  <text class="t" x="464" y="193">ci/release.sh</text>
+  <text class="s" x="464" y="212">minisign, Tag vX.Y.Z</text>
+  <text class="s" x="464" y="228">gh release create</text>
+
+  <rect class="box external" x="670" y="170" width="150" height="70" rx="8"/>
+  <text class="t" x="684" y="193">GitHub Release</text>
+  <text class="s" x="684" y="212">Paket + .minisig</text>
+  <text class="s" x="684" y="228">öffentlich</text>
+
+  <line class="arr a2" x1="180" y1="75" x2="218" y2="75"/>
+  <line class="arr a2" x1="410" y1="75" x2="448" y2="75"/>
+  <line class="arr a2" x1="630" y1="75" x2="668" y2="75"/>
+  <line class="arr a2" x1="820" y1="75" x2="848" y2="75"/>
+  <line class="arr a2" x1="100" y1="110" x2="100" y2="168"/>
+  <line class="arr a2" x1="540" y1="110" x2="540" y2="168"/>
+  <line class="arr ext a2" x1="630" y1="205" x2="668" y2="205"/>
+  <line class="arr ext a2" x1="820" y1="205" x2="848" y2="205"/>
+  <text class="lbl" x="548" y="146">signieren</text>
+</svg>
+<figcaption><code>ci/release.sh</code> ruft Build und Packen selbst auf und bricht ab, wenn der Arbeitsstand nicht sauber oder nicht gepusht ist, der Tag schon existiert oder der eigene Schlüssel nicht in <code>minisign.d</code> steht.</figcaption>
+</figure>
+
+<div class="table-wrap"><table>
+  <thead><tr><th>Werkzeug</th><th>Aufruf</th><th>Ergebnis</th></tr></thead>
+  <tbody>
+    <tr><td>PC-Build</td><td><code>cmake -S . -B build/pc -G Ninja &amp;&amp; cmake --build build/pc</code></td><td><code>build/pc/ui/carvos-ui</code> für das Fenster am PC</td></tr>
+    <tr><td>Entwickeln</td><td><code>build/pc/ui/carvos-ui --dev ui</code></td><td>Lädt beim Speichern neu, auch nach Änderungen aus Qt Design Studio</td></tr>
+    <tr><td>Build für den Pi</td><td><code>ci/build-arm64.sh</code></td><td><code>build/arm64/ui/carvos-ui</code> (aarch64), Image <code>carvos-build-arm64</code></td></tr>
+    <tr><td>Packen</td><td><code>ci/package-hub.sh AUSGABE [VERSION]</code></td><td>Paket. Ohne Version entsteht ein Entwicklungsstand wie <code>0.1.0+dev.&lt;Zeit&gt;.&lt;Commit&gt;</code>. Prüft, dass die Binärdatei aarch64 ist.</td></tr>
+    <tr><td>Auf den Pi spielen</td><td><code>provisioning/deploy-ui.sh [noah@HOST]</code></td><td>Paket per SSH, <code>carvos-update install --unsigned</code> mit Umschalten, Health-Check und Rollback</td></tr>
+    <tr><td>Release</td><td><code>ci/release.sh 1.2.3</code></td><td>Tag, GitHub Release mit <code>carvos-hub-arm64.tar.gz</code> und <code>.minisig</code></td></tr>
+    <tr><td>Screenshots</td><td><code>ui/tools/screenshot.py ZIEL [BREITExHÖHE] [hell]</code></td><td>Bilder aller Seiten ohne Fenster (Python, PySide6)</td></tr>
+  </tbody>
+</table></div>
+
+<h3>Signaturschlüssel</h3>
+<p>Jeder Dev-PC hat einen eigenen geheimen Schlüssel <code>~/.minisign/carvos.key</code>, der den Rechner nie verlässt. Der öffentliche liegt als <code>provisioning/files/minisign.d/&lt;pc-name&gt;.pub</code> im Repo, heute <code>noahs_pc.pub</code> (Windows-PC) und <code>ubuntu-pc.pub</code>.
+Ein Hub kennt neue oder gelöschte Schlüssel erst nach dem nächsten erfolgreichen Update.</p>
+
+<h2 id="einrichtung">9. Einrichtungsskripte</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Skript</th><th>Richtet ein</th></tr></thead>
+  <tbody>
+    <tr><td><code>provisioning/setup-kiosk.sh</code></td><td>Qt-6.8-Laufzeitpakete, entfernt alte PySide-Pakete, installiert <code>carvos-ui.service</code> und die udev-Regel, startet die Oberfläche.</td></tr>
+    <tr><td><code>provisioning/setup-quiet-boot.sh</code></td><td>Stiller Boot in <code>config.txt</code> und <code>cmdline.txt</code>, sichert die Originale als <code>.orig</code>.</td></tr>
+    <tr><td><code>provisioning/setup-updater.sh</code></td><td><code>minisign curl jq</code>, <code>/etc/carvos</code>, <code>/data</code>, <code>carvos-update</code>, die Update- und Service-Modus-Units, Gruppe <code>carvos</code>, polkit-Regel, Journal-Zugriff. Übernimmt eine alte Einrichtung als Version <code>0.0.0~lokal</code> und setzt <code>/opt/carvos</code> als Symlink.</td></tr>
+  </tbody>
+</table></div>
+<p class="note">Alle Skripte laufen als root und lassen sich mehrfach ausführen. Aus ihnen wird später das SD-Image für weitere Hubs gebaut.</p>
+
+<h2 id="geplant">10. Geplante Komponenten</h2>
+<div class="table-wrap"><table>
+  <thead><tr><th>Komponente</th><th>Aufgabe</th><th>Kommunikation</th></tr></thead>
+  <tbody>
+    <tr><td><code>carvosd</code> <span class="tag planned">geplant</span></td><td>„Gehirn“ des Hubs in C++: Gerätezustände, Online-Status, Alarme, Verläufe in SQLite unter <code>/data</code>, Pairing. Übernimmt später auch den Service-Modus von der Oberfläche.</td><td>MQTT mit mosquitto. Schnittstelle zur Oberfläche noch nicht festgelegt.</td></tr>
+    <tr><td>mosquitto <span class="tag planned">geplant</span></td><td>MQTT-5-Broker</td><td>Topics <code>carvos/&lt;node-id&gt;/state</code> (retained), <code>/set</code>, <code>/status</code> (Last Will), <code>carvos/pairing/announce</code>. Discovery im Home-Assistant-Format.</td></tr>
+    <tr><td>hostapd <span class="tag planned">geplant</span></td><td>Access Point auf <code>wlan0</code>: SSID <code>CARVOS-&lt;8 Hex-Zeichen&gt;</code>, WPA2-PSK, fester Kanal</td><td>Pairing per WPS-Tastendruck (<code>hostapd_cli wps_pbc</code>), PIN aus. <code>eth0</code> bleibt unberührt.</td></tr>
+    <tr><td>ESP-Nodes <span class="tag planned">geplant</span></td><td>Gasflaschenwaage, Grauwasserventil, Kamera (ESP8266, neue evtl. ESP32-C3)</td><td>MQTT über das Hub-WLAN, Broker-Adresse aus DHCP (Gateway). Das Kamerabild kommt als MJPEG per HTTP direkt in die Oberfläche.</td></tr>
+    <tr><td>Overlay-Dateisystem <span class="tag planned">geplant</span></td><td>System nur lesbar, beschreibbar ist nur <code>/data</code></td><td>Offen: Wie <code>carvos-update</code> dann nach <code>/etc</code> schreibt.</td></tr>
+    <tr><td>RTC DS3231 <span class="tag planned">geplant</span></td><td>Uhrzeit ohne Internet</td><td>Wichtig für Verläufe und HTTPS.</td></tr>
+    <tr><td>Benutzer <code>carvos</code> <span class="tag planned">geplant</span></td><td>Standardbenutzer ohne <code>sudo</code> für alle Dienste</td><td>Ersetzt <code>noah</code> in <code>carvos-ui.service</code>.</td></tr>
+  </tbody>
+</table></div>
+<p>Frühestens nach 1.0.0: Service-Modus mit WLAN-Client, Bildschirmtastatur und Rückkehr in den AP-Modus. Ferne Zukunft: Node-Updates über den Hub und Systempakete im signierten Release. Details stehen in <code>docs/ARCHITEKTUR.md</code> und <code>PLAN.md</code>.</p>
+
+</main>
+</body>
+</html>

@@ -1,7 +1,8 @@
 [Unit]
 Description=CARVOS Update aus dem neuesten GitHub-Release
 # Wird vom Service-Modus gestartet (später carvosd), von Hand: sudo systemctl start carvos-update
-# Lädt über die Schnittstelle mit Internet (eth0 oder im Service-Modus wlan0 als Client).
+# Lädt über die Standardroute. Bis 1.0.0 ist das nur Ethernet (eth0); wlan0 als Client
+# frühestens danach (docs/ARCHITEKTUR.md, „Updates des Hubs“).
 Wants=network-online.target
 After=network-online.target time-sync.target
 
